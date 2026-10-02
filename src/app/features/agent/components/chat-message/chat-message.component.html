@@ -1,0 +1,25 @@
+@if (message().role === 'user') {
+  <div class="flex justify-content-end">
+    <div class="message-text user-bubble surface-100 border-round-3xl px-4 py-2 line-height-3">{{ message().content }}</div>
+  </div>
+} @else {
+  <div class="flex gap-3">
+    <p-avatar icon="pi pi-sparkles" shape="circle" styleClass="app-avatar-accent flex-shrink-0" />
+    <div class="flex-1 min-w-0">
+      <div class="message-text line-height-3 pt-1">{{ message().content }}</div>
+      <div class="flex mt-1 -ml-2">
+        <p-button
+          [icon]="copied() ? 'pi pi-check' : 'pi pi-copy'"
+          [text]="true"
+          [rounded]="true"
+          severity="secondary"
+          size="small"
+          [pTooltip]="copied() ? 'Copiado' : 'Copiar'"
+          tooltipPosition="bottom"
+          ariaLabel="Copiar respuesta"
+          (onClick)="copy()"
+        />
+      </div>
+    </div>
+  </div>
+}

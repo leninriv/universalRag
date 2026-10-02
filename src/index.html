@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Universal RAG</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <!-- Tema de PrimeNG. ThemeService cambia el href para alternar entre claro y oscuro. -->
+  <link id="app-theme" rel="stylesheet" href="lara-light-indigo.css">
+  <script>
+    // Aplica el tema guardado antes de que arranque Angular para evitar un parpadeo.
+    // Debe usar la misma clave y regla que ThemeService (src/app/core/services/theme.service.ts).
+    (function () {
+      var mode = 'light';
+      try {
+        mode = localStorage.getItem('app-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      } catch (e) {}
+      document.getElementById('app-theme').href = 'lara-' + mode + '-indigo.css';
+      document.documentElement.style.colorScheme = mode;
+    })();
+  </script>
+</head>
+<body>
+  <app-root></app-root>
+</body>
+</html>

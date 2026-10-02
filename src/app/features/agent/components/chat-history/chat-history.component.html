@@ -1,0 +1,25 @@
+<div class="flex flex-column gap-3 p-3">
+  <a pButton routerLink="/agent" label="Nuevo chat" icon="pi pi-pen-to-square" class="p-button-outlined w-full no-underline"></a>
+
+  <p-iconField iconPosition="left" styleClass="w-full">
+    <p-inputIcon styleClass="pi pi-search" />
+    <input
+      pInputText
+      type="search"
+      class="w-full"
+      placeholder="Buscar chats"
+      aria-label="Buscar chats"
+      [(ngModel)]="search"
+    />
+  </p-iconField>
+</div>
+
+<nav class="flex-1 min-h-0 overflow-y-auto px-2 pb-3" aria-label="Historial de chats">
+  @if (menuItems().length) {
+    <p-menu [model]="menuItems()" styleClass="app-nav-menu" />
+  } @else {
+    <p class="m-0 mt-4 text-sm text-center text-color-secondary">
+      {{ search() ? 'No se encontraron chats' : 'Aún no tienes chats' }}
+    </p>
+  }
+</nav>

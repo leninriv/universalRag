@@ -1,0 +1,17 @@
+<div #scroller class="flex-1 min-h-0 overflow-y-auto">
+  <div class="app-content-column flex flex-column min-h-full px-3 py-4">
+    @for (message of messages(); track message.id) {
+      <app-chat-message [message]="message" />
+    } @empty {
+      <app-chat-empty-state class="flex-1" (promptSelected)="send($event)" />
+    }
+
+    @if (awaitingReply()) {
+      <app-chat-typing-indicator />
+    }
+  </div>
+</div>
+
+<div class="app-content-column px-3 pb-3">
+  <app-chat-composer [disabled]="awaitingReply()" (submitted)="send($event)" />
+</div>

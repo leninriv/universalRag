@@ -1,0 +1,27 @@
+<p-avatar icon="pi pi-sparkles" size="xlarge" shape="circle" styleClass="app-avatar-accent mb-3" />
+<h1 class="m-0 mb-2 text-3xl font-semibold text-center">¿En qué puedo ayudarte hoy?</h1>
+<p class="m-0 mb-5 text-center text-color-secondary">Haz una pregunta o elige una sugerencia para comenzar.</p>
+
+<div class="grid w-full">
+  @for (suggestion of suggestions; track suggestion.title) {
+    <div class="col-12 md:col-6">
+      <p-button
+        [outlined]="true"
+        severity="secondary"
+        styleClass="w-full h-full text-left"
+        [ariaLabel]="suggestion.title"
+        (onClick)="promptSelected.emit(suggestion.prompt)"
+      >
+        <ng-template pTemplate="content">
+          <div class="flex align-items-start gap-3 w-full">
+            <i [class]="suggestion.icon + ' text-primary mt-1'"></i>
+            <div class="flex flex-column gap-1">
+              <span class="font-semibold text-color">{{ suggestion.title }}</span>
+              <span class="text-sm font-normal text-color-secondary">{{ suggestion.description }}</span>
+            </div>
+          </div>
+        </ng-template>
+      </p-button>
+    </div>
+  }
+</div>
