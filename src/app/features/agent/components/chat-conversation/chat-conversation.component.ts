@@ -20,12 +20,11 @@ import { ChatTypingIndicatorComponent } from '../chat-typing-indicator/chat-typi
 
 /** Conversación activa. Sin `chatId` muestra el estado inicial de un chat nuevo. */
 @Component({
-  selector: 'app-chat-conversation',
-  standalone: true,
-  imports: [ChatComposerComponent, ChatEmptyStateComponent, ChatMessageComponent, ChatTypingIndicatorComponent],
-  templateUrl: './chat-conversation.component.html',
-  host: { class: 'flex flex-column h-full' },
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-chat-conversation',
+    imports: [ChatComposerComponent, ChatEmptyStateComponent, ChatMessageComponent, ChatTypingIndicatorComponent],
+    templateUrl: './chat-conversation.component.html',
+    host: { class: 'flex flex-column h-full' },
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatConversationComponent {
   private readonly chatService = inject(ChatService);

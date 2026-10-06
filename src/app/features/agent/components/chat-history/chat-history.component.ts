@@ -12,12 +12,11 @@ import { ChatService, groupChatsByDate } from '../../services/chat.service';
 
 /** Botón "Nuevo chat", buscador e historial de chats agrupado por fecha. */
 @Component({
-  selector: 'app-chat-history',
-  standalone: true,
-  imports: [FormsModule, RouterLink, ButtonModule, IconFieldModule, InputIconModule, InputTextModule, MenuModule],
-  templateUrl: './chat-history.component.html',
-  host: { class: 'flex flex-column' },
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-chat-history',
+    imports: [FormsModule, RouterLink, ButtonModule, IconFieldModule, InputIconModule, InputTextModule, MenuModule],
+    templateUrl: './chat-history.component.html',
+    host: { class: 'flex flex-column' },
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatHistoryComponent {
   private readonly chatService = inject(ChatService);

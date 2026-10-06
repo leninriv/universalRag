@@ -11,12 +11,11 @@ import { ChatService } from '../../services/chat.service';
 
 /** Página del módulo Agent: historial de chats + conversación activa (ruta hija). */
 @Component({
-  selector: 'app-agent-page',
-  standalone: true,
-  imports: [RouterOutlet, ButtonModule, SidebarModule, TopbarContentDirective, ChatHistoryComponent],
-  templateUrl: './agent-page.component.html',
-  host: { class: 'block h-full' },
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-agent-page',
+    imports: [RouterOutlet, ButtonModule, SidebarModule, TopbarContentDirective, ChatHistoryComponent],
+    templateUrl: './agent-page.component.html',
+    host: { class: 'block h-full' },
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AgentPageComponent {
   private readonly route = inject(ActivatedRoute);

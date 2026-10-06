@@ -8,11 +8,10 @@ const CURRENT_USER = { name: 'Usuario Demo', email: 'demo@universalrag.local', i
 
 /** Avatar del usuario con su menú desplegable. */
 @Component({
-  selector: 'app-user-menu',
-  standalone: true,
-  imports: [AvatarModule, MenuModule],
-  templateUrl: './user-menu.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-user-menu',
+    imports: [AvatarModule, MenuModule],
+    templateUrl: './user-menu.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UserMenuComponent {
   protected readonly user = CURRENT_USER;

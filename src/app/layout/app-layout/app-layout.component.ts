@@ -11,11 +11,10 @@ import { TopbarComponent } from '../topbar/topbar.component';
 
 /** Shell de la aplicación: menú lateral colapsable en desktop y drawer en pantallas pequeñas. */
 @Component({
-  selector: 'app-layout',
-  standalone: true,
-  imports: [RouterOutlet, SidebarModule, BrandComponent, SideNavComponent, TopbarComponent],
-  templateUrl: './app-layout.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-layout',
+    imports: [RouterOutlet, SidebarModule, BrandComponent, SideNavComponent, TopbarComponent],
+    templateUrl: './app-layout.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppLayoutComponent {
   private readonly layout = inject(LayoutService);

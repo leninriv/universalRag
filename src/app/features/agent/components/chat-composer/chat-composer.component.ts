@@ -5,12 +5,11 @@ import { InputTextareaModule } from 'primeng/inputtextarea';
 
 /** Caja de texto para escribir y enviar mensajes. Enter envía, Shift+Enter agrega una línea. */
 @Component({
-  selector: 'app-chat-composer',
-  standalone: true,
-  imports: [FormsModule, ButtonModule, InputTextareaModule],
-  templateUrl: './chat-composer.component.html',
-  styleUrl: './chat-composer.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-chat-composer',
+    imports: [FormsModule, ButtonModule, InputTextareaModule],
+    templateUrl: './chat-composer.component.html',
+    styleUrl: './chat-composer.component.scss',
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatComposerComponent {
   /** Bloquea el envío (p. ej. mientras el agente responde); se puede seguir escribiendo. */

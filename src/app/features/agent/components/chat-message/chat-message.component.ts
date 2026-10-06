@@ -9,13 +9,12 @@ const COPIED_FEEDBACK_MS = 1500;
 
 /** Un mensaje del chat: burbuja a la derecha (usuario) o respuesta con avatar (agente). */
 @Component({
-  selector: 'app-chat-message',
-  standalone: true,
-  imports: [AvatarModule, ButtonModule, TooltipModule],
-  templateUrl: './chat-message.component.html',
-  styleUrl: './chat-message.component.scss',
-  host: { class: 'block mb-4' },
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-chat-message',
+    imports: [AvatarModule, ButtonModule, TooltipModule],
+    templateUrl: './chat-message.component.html',
+    styleUrl: './chat-message.component.scss',
+    host: { class: 'block mb-4' },
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatMessageComponent {
   readonly message = input.required<ChatMessage>();

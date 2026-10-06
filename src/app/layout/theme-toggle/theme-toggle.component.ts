@@ -6,10 +6,9 @@ import { ThemeService } from '../../core/services/theme.service';
 
 /** Botón para alternar entre tema claro y oscuro. */
 @Component({
-  selector: 'app-theme-toggle',
-  standalone: true,
-  imports: [ButtonModule, TooltipModule],
-  template: `
+    selector: 'app-theme-toggle',
+    imports: [ButtonModule, TooltipModule],
+    template: `
     <p-button
       [icon]="theme.isDark() ? 'pi pi-sun' : 'pi pi-moon'"
       [text]="true"
@@ -21,7 +20,7 @@ import { ThemeService } from '../../core/services/theme.service';
       (onClick)="theme.toggle()"
     />
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ThemeToggleComponent {
   protected readonly theme = inject(ThemeService);

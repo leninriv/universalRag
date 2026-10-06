@@ -8,10 +8,9 @@ import { UserMenuComponent } from '../user-menu/user-menu.component';
 
 /** Barra superior: botón del menú lateral, contenido de la página activa, tema y avatar. */
 @Component({
-  selector: 'app-topbar',
-  standalone: true,
-  imports: [NgTemplateOutlet, ButtonModule, ThemeToggleComponent, UserMenuComponent],
-  template: `
+    selector: 'app-topbar',
+    imports: [NgTemplateOutlet, ButtonModule, ThemeToggleComponent, UserMenuComponent],
+    template: `
     <header class="flex align-items-center gap-2 h-4rem px-3 surface-section border-bottom-1 surface-border">
       <p-button
         icon="pi pi-bars"
@@ -28,7 +27,7 @@ import { UserMenuComponent } from '../user-menu/user-menu.component';
       <app-user-menu />
     </header>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TopbarComponent {
   protected readonly layout = inject(LayoutService);
