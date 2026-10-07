@@ -5,15 +5,10 @@ export type ThemeMode = 'light' | 'dark';
 
 // Debe coincidir con el script de src/index.html, que aplica el tema antes de arrancar Angular.
 const STORAGE_KEY = 'app-theme';
-const THEME_LINK_ID = 'app-theme';
-const THEME_FILES: Record<ThemeMode, string> = {
-  light: 'lara-light-indigo.css',
-  dark: 'lara-dark-indigo.css',
-};
+const DARK_CLASS = 'app-dark';
 
 /**
- * Tema claro/oscuro. Cambia la hoja de tema de PrimeNG (`<link id="app-theme">`), que se genera
- * como bundle aparte en angular.json. Sin preferencia guardada se usa la del sistema operativo.
+ * Tema claro/oscuro. Alterna la clase `app-dark` en `<html>` (darkModeSelector de PrimeNG, ver app.config.ts). Sin preferencia guardada se usa la del sistema operativo.
  */
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
@@ -37,10 +32,7 @@ export class ThemeService {
   }
 
   private applyTheme(mode: ThemeMode): void {
-    const link = this.document.getElementById(THEME_LINK_ID) as HTMLLinkElement | null;
-    if (link && link.getAttribute('href') !== THEME_FILES[mode]) {
-      link.href = THEME_FILES[mode];
-    }
+    this.document.documentElement.classList.toggle(DARK_CLASS, mode === 'dark');
     this.document.documentElement.style.colorScheme = mode;
   }
 }

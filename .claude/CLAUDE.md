@@ -1,6 +1,6 @@
 # Universal RAG — Guía del proyecto
 
-Aplicación Angular 18 (standalone) con **PrimeNG 17** como única librería de componentes UI.
+Aplicación Angular 22 (standalone) con **PrimeNG 22** como única librería de componentes UI.
 
 ## Comandos
 
@@ -10,14 +10,14 @@ Aplicación Angular 18 (standalone) con **PrimeNG 17** como única librería de 
 
 ## Regla principal: siempre PrimeNG y reutilizar componentes
 
-1. **Toda la UI se construye con componentes de PrimeNG v17.** Documentación: https://v17.primeng.org/installation
+1. **Toda la UI se construye con componentes de PrimeNG v22.** Documentación: https://primeng.org
    - Antes de escribir HTML/CSS propio para un control (botón, input, lista, menú, modal, drawer, tabla, tag, avatar, tooltip, skeleton, toast, etc.), busca el equivalente en PrimeNG y úsalo.
    - No agregues otras librerías de UI (Angular Material, Bootstrap, Tailwind, ng-zorro…).
    - Íconos: solo **PrimeIcons** (`pi pi-*`).
    - Layout, espaciado, tipografía y colores: utilidades de **PrimeFlex** (`flex`, `gap-2`, `p-3`, `text-color-secondary`, `surface-border`…). Para colores usa las variables del tema (`var(--primary-color)`, `var(--surface-border)`, `var(--highlight-bg)`…); nunca colores hardcodeados.
    - El SCSS de componente debe ser mínimo (solo lo que PrimeFlex no cubre). Personalizaciones globales de componentes PrimeNG van en `src/styles.scss` como variantes con clase propia (ej. `.app-nav-menu`).
-   - Mantén PrimeNG en la línea **17.x** (PrimeNG 18+ cambia el sistema de temas).
-   - **Todo debe verse bien en tema claro y oscuro.** Los temas son `lara-light-indigo` y `lara-dark-indigo`, generados como bundles aparte en `angular.json` y alternados por `ThemeService` (no los agregues como estilos inyectados). Usa clases que dependen del tema (`surface-ground`, `surface-section`, `surface-card`, `surface-border`, `text-color`, `text-color-secondary`, `bg-primary`, `text-primary`) y nunca tonos fijos de paleta (`bg-white`, `bg-gray-100`, `bg-primary-100`, `text-gray-700`…), que no cambian con el tema.
+   - PrimeNG usa el sistema de temas nuevo (`@primeuix/themes`). `src/styles.scss` mapea las variables clásicas de PrimeFlex (`--surface-*`, `--text-color`, `--primary-color`…) a los tokens `--p-*`. Selectores CSS de PrimeNG: `p-menu-item`, `p-menu-submenu-label`, etc. (ya no `p-menuitem`).
+   - **Todo debe verse bien en tema claro y oscuro.** El tema es Lara con acento indigo, configurado con `providePrimeNG` en `app.config.ts`; el modo oscuro es la clase `app-dark` en `<html>`, que alterna `ThemeService`. Usa clases que dependen del tema (`surface-ground`, `surface-section`, `surface-card`, `surface-border`, `text-color`, `text-color-secondary`, `bg-primary`, `text-primary`) y nunca tonos fijos de paleta (`bg-white`, `bg-gray-100`, `bg-primary-100`, `text-gray-700`…), que no cambian con el tema.
 
 2. **Reutiliza antes de crear.** Antes de crear un componente nuevo:
    - Revisa el catálogo de abajo y `src/app/shared/components/`.
@@ -39,7 +39,7 @@ Aplicación Angular 18 (standalone) con **PrimeNG 17** como única librería de 
 | `LayoutService` | `layout/layout.service.ts` | Menú lateral colapsado (desktop), drawer abierto (mobile) y contenido de la barra superior. |
 | `.app-avatar-accent` | `src/styles.scss` | Variante de `p-avatar` con el color de acento del tema. |
 | `.app-nav-menu` | `src/styles.scss` | Variante de `p-menu` para navegación lateral; resalta el item cuya `routerLink` está activa. |
-| `.app-drawer` | `src/styles.scss` | Variante de `p-sidebar` sin padding en el contenido. |
+| `.app-drawer` | `src/styles.scss` | Variante de `p-drawer` sin padding en el contenido. |
 | `.app-content-column` | `src/styles.scss` | Columna central de lectura (max 48rem). |
 | `<app-chat-message>` | `features/agent/components/chat-message` | Burbuja de mensaje (usuario / agente). |
 | `<app-chat-composer>` | `features/agent/components/chat-composer` | Caja para escribir y enviar mensajes. |

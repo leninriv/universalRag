@@ -9,8 +9,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-  <!-- Tema de PrimeNG. ThemeService cambia el href para alternar entre claro y oscuro. -->
-  <link id="app-theme" rel="stylesheet" href="lara-light-indigo.css">
   <script>
     // Aplica el tema guardado antes de que arranque Angular para evitar un parpadeo.
     // Debe usar la misma clave y regla que ThemeService (src/app/core/services/theme.service.ts).
@@ -19,7 +17,7 @@
       try {
         mode = localStorage.getItem('app-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
       } catch (e) {}
-      document.getElementById('app-theme').href = 'lara-' + mode + '-indigo.css';
+      if (mode === 'dark') document.documentElement.classList.add('app-dark');
       document.documentElement.style.colorScheme = mode;
     })();
   </script>

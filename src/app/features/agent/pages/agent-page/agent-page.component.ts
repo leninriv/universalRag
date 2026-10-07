@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { SidebarModule } from 'primeng/sidebar';
+import { DrawerModule } from 'primeng/drawer';
 import { filter, map } from 'rxjs';
 
 import { TopbarContentDirective } from '../../../../layout/topbar/topbar-content.directive';
@@ -12,7 +12,7 @@ import { ChatService } from '../../services/chat.service';
 /** Página del módulo Agent: historial de chats + conversación activa (ruta hija). */
 @Component({
     selector: 'app-agent-page',
-    imports: [RouterOutlet, ButtonModule, SidebarModule, TopbarContentDirective, ChatHistoryComponent],
+    imports: [RouterOutlet, ButtonModule, DrawerModule, TopbarContentDirective, ChatHistoryComponent],
     templateUrl: './agent-page.component.html',
     host: { class: 'block h-full' },
     changeDetection: ChangeDetectionStrategy.OnPush

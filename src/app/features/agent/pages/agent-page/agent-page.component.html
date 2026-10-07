@@ -26,9 +26,9 @@
 </div>
 
 <!-- Historial (mobile) -->
-<p-sidebar [(visible)]="historyVisible" styleClass="app-drawer w-20rem">
+<p-drawer [(visible)]="historyVisible" styleClass="app-drawer w-20rem">
   <ng-template pTemplate="header">
     <span class="font-semibold text-lg">Historial</span>
   </ng-template>
   <app-chat-history class="h-full" />
-</p-sidebar>
+</p-drawer>

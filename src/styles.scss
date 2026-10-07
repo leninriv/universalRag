@@ -1,11 +1,30 @@
 /*
  * Estilos globales.
- * El tema (Lara), los estilos base de PrimeNG, PrimeIcons y PrimeFlex se cargan en angular.json.
+ * El tema (Lara) lo provee providePrimeNG en app.config.ts. PrimeIcons y PrimeFlex se cargan en angular.json.
  * Aquí solo van tokens y variantes globales reutilizables de componentes PrimeNG.
  */
 
 :root {
+  /* Variables que usan PrimeFlex y el SCSS propio, mapeadas a los tokens del tema de PrimeNG (--p-*). */
+  --surface-ground: var(--p-surface-50);
+  --surface-section: var(--p-surface-0);
+  --surface-card: var(--p-surface-0);
+  --surface-border: var(--p-surface-200);
+  --text-color: var(--p-text-color);
+  --text-color-secondary: var(--p-text-muted-color);
+  --primary-color: var(--p-primary-color);
+  --primary-color-text: var(--p-primary-contrast-color);
+  --highlight-bg: var(--p-highlight-background);
+  --highlight-text-color: var(--p-highlight-color);
+  --border-radius: var(--p-border-radius-md);
   --font-family: 'Inter', 'Inter var', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.app-dark {
+  --surface-ground: var(--p-surface-950);
+  --surface-section: var(--p-surface-900);
+  --surface-card: var(--p-surface-900);
+  --surface-border: var(--p-surface-700);
 }
 
 html,
@@ -35,7 +54,7 @@ body {
 }
 
 /* Variante de p-sidebar usada como drawer de navegación: sin padding en el contenido. */
-.app-drawer.p-sidebar .p-sidebar-content {
+.app-drawer.p-drawer .p-drawer-content {
   padding: 0;
 }
 
@@ -50,7 +69,7 @@ body {
   border: 0 none;
   background: transparent;
 
-  .p-submenu-header {
+  .p-menu-submenu-label {
     padding: 1rem 0.75rem 0.375rem;
     background: transparent;
     color: var(--text-color-secondary);
@@ -60,33 +79,33 @@ body {
     text-transform: uppercase;
   }
 
-  .p-menuitem {
+  .p-menu-item {
     margin-bottom: 2px;
   }
 
-  .p-menuitem > .p-menuitem-content {
+  .p-menu-item > .p-menu-item-content {
     border-radius: var(--border-radius);
   }
 
-  .p-menuitem > .p-menuitem-content .p-menuitem-link {
+  .p-menu-item > .p-menu-item-content .p-menu-item-link {
     min-width: 0;
     padding: 0.625rem 0.75rem;
     border-radius: var(--border-radius);
   }
 
-  .p-menuitem-text {
+  .p-menu-item-label {
     overflow: hidden;
     line-height: 1.25;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
 
-  .p-menuitem > .p-menuitem-content .p-menuitem-link.p-menuitem-link-active,
-  .p-menuitem:not(.p-highlight):not(.p-disabled) > .p-menuitem-content:hover .p-menuitem-link.p-menuitem-link-active {
+  .p-menu-item > .p-menu-item-content .p-menu-item-link.p-menu-item-link-active,
+  .p-menu-item:not(.p-highlight):not(.p-disabled) > .p-menu-item-content:hover .p-menu-item-link.p-menu-item-link-active {
     background: var(--highlight-bg);
 
-    .p-menuitem-text,
-    .p-menuitem-icon {
+    .p-menu-item-label,
+    .p-menu-item-icon {
       color: var(--highlight-text-color);
       font-weight: 600;
     }
@@ -94,16 +113,16 @@ body {
 
   /* Menú lateral colapsado: solo íconos centrados (el nombre se muestra como tooltip). */
   &.app-nav-menu-collapsed {
-    .p-submenu-header,
-    .p-menuitem-text {
+    .p-menu-submenu-label,
+    .p-menu-item-label {
       display: none;
     }
 
-    .p-menuitem > .p-menuitem-content .p-menuitem-link {
+    .p-menu-item > .p-menu-item-content .p-menu-item-link {
       justify-content: center;
       padding-inline: 0;
 
-      .p-menuitem-icon {
+      .p-menu-item-icon {
         margin-right: 0;
       }
     }
