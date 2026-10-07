@@ -1,12 +1,11 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MenuItem } from 'primeng/api';
 import { AvatarModule } from 'primeng/avatar';
 import { MenuModule } from 'primeng/menu';
 
-// Solo UI: usuario de ejemplo hasta que exista autenticación.
-const CURRENT_USER = { name: 'Usuario Demo', email: 'demo@universalrag.local', initials: 'UD' };
+import { AuthService } from '../../core/services/auth.service';
 
-/** Avatar del usuario con su menú desplegable. */
+/** Avatar del usuario en sesión con su menú desplegable. */
 @Component({
     selector: 'app-user-menu',
     imports: [AvatarModule, MenuModule],
@@ -14,12 +13,26 @@ const CURRENT_USER = { name: 'Usuario Demo', email: 'demo@universalrag.local', i
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UserMenuComponent {
-  protected readonly user = CURRENT_USER;
+  private readonly auth = inject(AuthService);
+
+  protected readonly user = computed(() => {
+    const user = this.auth.user();
+    return {
+      name: user?.name ?? '',
+      email: user?.email ?? '',
+      initials: (user?.name ?? '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((word) => word[0].toUpperCase())
+        .join(''),
+    };
+  });
 
   protected readonly items: MenuItem[] = [
     { label: 'Perfil', icon: 'pi pi-user' },
     { label: 'Configuración', icon: 'pi pi-cog' },
     { separator: true },
-    { label: 'Cerrar sesión', icon: 'pi pi-sign-out' },
+    { label: 'Cerrar sesión', icon: 'pi pi-sign-out', command: () => this.auth.logout() },
   ];
 }

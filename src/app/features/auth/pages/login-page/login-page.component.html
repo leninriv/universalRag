@@ -1,0 +1,59 @@
+<div class="relative flex align-items-center justify-content-center min-h-screen surface-ground p-3">
+  <div class="absolute top-0 right-0 p-3">
+    <app-theme-toggle />
+  </div>
+
+  <p-card styleClass="w-full" [style]="{ 'max-width': '24rem' }">
+    <div class="flex flex-column align-items-center gap-1 mb-4 text-center">
+      <app-brand />
+      <p class="m-0 mt-2 text-color-secondary">Inicia sesión para continuar</p>
+    </div>
+
+    <form class="flex flex-column gap-3" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      @if (error(); as message) {
+        <p-message severity="error" icon="pi pi-exclamation-circle" role="alert">{{ message }}</p-message>
+      }
+
+      <div class="flex flex-column gap-2">
+        <label for="login-email" class="font-medium">Correo electrónico</label>
+        <input
+          pInputText
+          id="login-email"
+          type="email"
+          formControlName="email"
+          autocomplete="username"
+          placeholder="nombre@empresa.com"
+          class="w-full"
+          [attr.aria-invalid]="form.controls.email.touched && form.controls.email.invalid"
+        />
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <p-message severity="error" variant="simple" size="small">Ingresa un correo válido.</p-message>
+        }
+      </div>
+
+      <div class="flex flex-column gap-2">
+        <label for="login-password" class="font-medium">Contraseña</label>
+        <p-password
+          inputId="login-password"
+          formControlName="password"
+          autocomplete="current-password"
+          [feedback]="false"
+          [toggleMask]="true"
+          styleClass="w-full"
+          inputStyleClass="w-full"
+        />
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <p-message severity="error" variant="simple" size="small">Ingresa tu contraseña.</p-message>
+        }
+      </div>
+
+      <p-button type="submit" label="Iniciar sesión" styleClass="w-full" [loading]="loading()" />
+    </form>
+
+    @if (mockCredentials; as demo) {
+      <p-message severity="info" icon="pi pi-info-circle" styleClass="mt-3 w-full">
+        <span class="text-sm">Modo demo: <b>{{ demo.email }}</b> / <b>{{ demo.password }}</b></span>
+      </p-message>
+    }
+  </p-card>
+</div>
