@@ -5,17 +5,17 @@
   aria-haspopup="menu"
   (click)="menu.toggle($event)"
 >
-  <p-avatar [label]="user.initials" shape="circle" styleClass="bg-primary font-semibold" />
+  <p-avatar [label]="user().initials" shape="circle" styleClass="bg-primary font-semibold" />
 </button>
 
 <p-menu #menu [model]="items" [popup]="true" appendTo="body" styleClass="w-15rem">
   <ng-template pTemplate="start">
     <div class="flex align-items-center gap-2 px-3 py-2">
-      <p-avatar [label]="user.initials" shape="circle" styleClass="bg-primary font-semibold flex-shrink-0" />
+      <p-avatar [label]="user().initials" shape="circle" styleClass="bg-primary font-semibold flex-shrink-0" />
       <div class="flex flex-column min-w-0">
-        <span class="font-semibold">{{ user.name }}</span>
+        <span class="font-semibold">{{ user().name }}</span>
         <span class="text-sm text-color-secondary white-space-nowrap overflow-hidden text-overflow-ellipsis">
-          {{ user.email }}
+          {{ user().email }}
         </span>
       </div>
     </div>
