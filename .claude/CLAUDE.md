@@ -94,14 +94,33 @@ El backend es [InsForge](https://insforge.dev), proyecto **universalRag** (`proj
 | Pieza | Ubicación | Notas |
 | --- | --- | --- |
 | Tabla `public.documents` + `match_documents()` | `migrations/` | `embedding vector(1536)` (text-embedding-3-small), índice HNSW coseno. `score` = similitud coseno. RLS activo y sin privilegios para `anon`/`authenticated`: solo se accede vía edge functions. |
-| Edge function `ingest` | `insforge/functions/ingest.ts` | Solo con la API key. Chunks de ≤500 tokens (`cl100k_base`) con 100 de overlap respetando oraciones; re-ingestar un `source` reemplaza sus chunks. |
-| Edge function `ask` | `insforge/functions/ask.ts` | Token de usuario autenticado o API key (el anon key no). Top 5 chunks → LLM (`OPENROUTER_CHAT_MODEL`, por defecto `openai/gpt-4o-mini`); si no está en el contexto responde "No tengo esa información en mis documentos". |
-| Prueba end-to-end | `insforge/scripts/test-rag.sh` | Ingesta `insforge/samples/nebula-logistica.txt` y hace una pregunta presente y otra ausente. |
+| Edge function `ingest` | `insforge/functions/ingest.ts` | Solo usuarios con sesión iniciada (el anon key y la API key se rechazan). Chunks de ≤500 tokens (`cl100k_base`) con 100 de overlap respetando oraciones; re-ingestar un `source` reemplaza sus chunks. |
+| Edge function `ask` | `insforge/functions/ask.ts` | Solo usuarios con sesión iniciada (el anon key y la API key se rechazan). Top 5 chunks → LLM (`OPENROUTER_CHAT_MODEL`, hoy `deepseek/deepseek-v4.1-flash`); si no está en el contexto responde "No tengo esa información en mis documentos". Siempre guarda pregunta y respuesta en el chat del usuario (`chat_id` opcional; sin él crea uno). |
+| RPC `list_documents()` | `migrations/20261005000748_create-list-documents.sql` | Cualquier usuario autenticado. Un elemento por `source`: `[{ source, uploaded_at }]`, más recientes primero. `SECURITY DEFINER` para no abrir `documents` (texto y embeddings) a los clientes. Paginación con `?limit=&offset=`. |
+| Prueba end-to-end | `insforge/scripts/test-rag.sh` | Ingesta `insforge/samples/nebula-logistica.txt` y hace una pregunta presente y otra ausente. Requiere `INSFORGE_USER_TOKEN` o `INSFORGE_TEST_EMAIL`/`INSFORGE_TEST_PASSWORD`. |
+
+### Historial de chats
+
+| Pieza | Ubicación | Notas |
+| --- | --- | --- |
+| Tablas `chats` y `chat_messages` | `migrations/20261004233510_create-chats.sql` | Cada usuario ve, renombra (`title`) y borra solo sus chats (RLS). Los mensajes (`role` user/assistant, `content`, `sources`, `model`) solo los escribe el servidor. Borrar un chat borra sus mensajes. |
+| RPC `list_chats(page_size, before_cursor)` | misma migración | Historial del usuario por última actividad. Devuelve `{ chats, has_more, next_cursor }`. |
+| RPC `get_chat_messages(chat_id, before_id, page_size)` | misma migración | Primera página = mensajes más recientes; para cargar anteriores se pasa `next_cursor` como `before_id`. Cada página viene en orden cronológico: `{ chat, messages, has_more, next_cursor }`. |
+| RPC `save_chat_exchange(...)` | misma migración | Interna (solo `project_admin`): la usa `ask` para guardar pregunta + respuesta en una transacción. |
+| Prueba end-to-end | `insforge/scripts/test-chats.mjs` | Requiere credenciales de 1 o 2 usuarios (ver cabecera del script). |
+
+Endpoints (todos con `Authorization: Bearer <token del usuario>`):
+- Enviar mensaje: `POST /functions/ask` `{ question, chat_id? }`
+- Historial: `POST /api/database/rpc/list_chats`
+- Mensajes paginados: `POST /api/database/rpc/get_chat_messages`
+- Renombrar: `PATCH /api/database/records/chats?id=eq.<id>` `{ title }`
+- Borrar: `DELETE /api/database/records/chats?id=eq.<id>`
+- Documentos ingestados: `POST /api/database/rpc/list_documents` (opcional `?limit=20&offset=0`)
 
 - Desplegar una función: `npx -y @insforge/cli functions deploy <slug> --file insforge/functions/<slug>.ts`. Cada función es un solo archivo (no pueden importarse entre sí).
 - Endpoints: `https://fkk6yt6n.us-east.insforge.app/functions/<slug>`.
-- Las funciones leen `API_KEY`, `INSFORGE_BASE_URL` y `OPENROUTER_API_KEY` de los secrets del proyecto.
-- **Pendiente:** la organización está en plan free y el Model Gateway (y la memoria de agente de InsForge) solo funcionan en planes pagos; el secret `OPENROUTER_API_KEY` todavía no existe, así que `ingest` y `ask` responden 500 hasta configurarlo.
+- Las funciones leen `API_KEY`, `INSFORGE_BASE_URL`, `OPENROUTER_API_KEY` y `OPENROUTER_CHAT_MODEL` de los secrets del proyecto.
+- La organización está en plan free: el Model Gateway de InsForge y su memoria de agente no están disponibles. `OPENROUTER_API_KEY` es una key propia de OpenRouter.
 
 @../AGENTS.md
 

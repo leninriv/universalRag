@@ -2,14 +2,14 @@
  * Edge function `ingest` (Deno, InsForge).
  *
  * POST /functions/ingest
- * Authorization: Bearer <API_KEY del proyecto>   (solo administradores)
+ * Authorization: Bearer <token de un usuario con sesión iniciada>
  * Body: { "text": string, "source": string, "chunk_tokens"?: number, "overlap_tokens"?: number }
  *
  * Parte el texto en chunks de hasta 500 tokens con overlap, genera sus embeddings con
  * openai/text-embedding-3-small (model gateway / OpenRouter) y los guarda en public.documents.
  * Volver a ingestar el mismo `source` reemplaza sus chunks anteriores.
  */
-import { createAdminClient } from 'npm:@insforge/sdk@1.5.2';
+import { createAdminClient, createClient } from 'npm:@insforge/sdk@1.5.2';
 import { Tiktoken } from 'npm:js-tiktoken@1.0.21/lite';
 import cl100k_base from 'npm:js-tiktoken@1.0.21/ranks/cl100k_base';
 
@@ -45,8 +45,8 @@ export default async function (req: Request): Promise<Response> {
   if (!apiKey || !baseUrl) {
     return json({ error: 'Faltan los secrets API_KEY o INSFORGE_BASE_URL.' }, 500);
   }
-  if (!safeEqual(bearerToken(req) ?? '', apiKey)) {
-    return json({ error: 'No autorizado: ingest requiere la API key del proyecto.' }, 401);
+  if (!(await isLoggedIn(req, baseUrl))) {
+    return json({ error: 'No autorizado: inicia sesión y envía tu token de acceso.' }, 401);
   }
   if (!openRouterKey) {
     return json({ error: 'Falta el secret OPENROUTER_API_KEY (model gateway).' }, 500);
@@ -268,21 +268,15 @@ async function createEmbeddings(inputs: string[], openRouterKey: string): Promis
   return embeddings;
 }
 
-function bearerToken(req: Request): string | null {
+/** Solo usuarios con sesión: el anon key y la API key no tienen usuario asociado. */
+async function isLoggedIn(req: Request, baseUrl: string): Promise<boolean> {
   const header = req.headers.get('Authorization') ?? '';
-  return header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : null;
-}
-
-/** Comparación en tiempo constante para no filtrar la API key por timing. */
-function safeEqual(a: string, b: string): boolean {
-  const encoder = new TextEncoder();
-  const left = encoder.encode(a);
-  const right = encoder.encode(b);
-  let diff = left.length ^ right.length;
-  for (let i = 0; i < Math.max(left.length, right.length); i++) {
-    diff |= (left[i] ?? 0) ^ (right[i] ?? 0);
+  const token = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : '';
+  if (!token) {
+    return false;
   }
-  return diff === 0;
+  const { data } = await createClient({ baseUrl, accessToken: token }).auth.getCurrentUser();
+  return Boolean(data?.user?.id);
 }
 
 function clampInt(value: unknown, min: number, max: number, fallback: number): number {

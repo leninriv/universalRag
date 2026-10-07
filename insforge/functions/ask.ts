@@ -2,12 +2,15 @@
  * Edge function `ask` (Deno, InsForge).
  *
  * POST /functions/ask
- * Authorization: Bearer <token de un usuario autenticado | API_KEY del proyecto>
- * Body: { "question": string }
+ * Authorization: Bearer <token de un usuario con sesión iniciada>
+ * Body: { "question": string, "chat_id"?: uuid }
  *
  * Genera el embedding de la pregunta, recupera los 5 chunks más similares con match_documents y
  * le pide a un LLM del model gateway que responda solo con ese contexto. Devuelve la respuesta y
  * las fuentes usadas.
+ *
+ * La pregunta y la respuesta se guardan en el historial del usuario: en `chat_id` si se envía
+ * (debe ser suyo) o en un chat nuevo.
  */
 import { createAdminClient, createClient } from 'npm:@insforge/sdk@1.5.2';
 
@@ -17,7 +20,9 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1';
 const MATCH_COUNT = 5;
 const MAX_QUESTION_CHARS = 2000;
 const EXCERPT_CHARS = 240;
+const TITLE_CHARS = 60;
 const NOT_FOUND_ANSWER = 'No tengo esa información en mis documentos';
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const SYSTEM_PROMPT = `Eres un asistente que responde preguntas usando ÚNICAMENTE la información del contexto.
 Reglas:
@@ -39,6 +44,26 @@ interface Match {
   score: number;
 }
 
+interface Source {
+  id: number;
+  source: string;
+  chunk_index: number;
+  score: number;
+  excerpt: string;
+}
+
+interface RagAnswer {
+  answer: string;
+  found: boolean;
+  model: string | null;
+  sources: Source[];
+}
+
+interface User {
+  id: string;
+  token: string;
+}
+
 export default async function (req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
@@ -55,9 +80,9 @@ export default async function (req: Request): Promise<Response> {
     return json({ error: 'Faltan los secrets API_KEY o INSFORGE_BASE_URL.' }, 500);
   }
 
-  // Cada pregunta consume créditos del model gateway: solo usuarios autenticados o la API key.
-  if (!(await isAuthorized(req, baseUrl, apiKey))) {
-    return json({ error: 'No autorizado: envía el token de un usuario autenticado o la API key.' }, 401);
+  const user = await currentUser(req, baseUrl);
+  if (!user) {
+    return json({ error: 'No autorizado: inicia sesión y envía tu token de acceso.' }, 401);
   }
   if (!openRouterKey) {
     return json({ error: 'Falta el secret OPENROUTER_API_KEY (model gateway).' }, 500);
@@ -74,59 +99,85 @@ export default async function (req: Request): Promise<Response> {
     return json({ error: `\`question\` es obligatoria (máx. ${MAX_QUESTION_CHARS} caracteres).` }, 400);
   }
 
+  const chatId = body.chat_id ?? null;
+  if (chatId !== null && (typeof chatId !== 'string' || !UUID_PATTERN.test(chatId))) {
+    return json({ error: '`chat_id` debe ser un UUID.' }, 400);
+  }
+  // Se valida antes de llamar al LLM para no gastar créditos en un chat ajeno o inexistente.
+  if (chatId && !(await ownsChat(baseUrl, user.token, chatId))) {
+    return json({ error: 'Chat no encontrado.' }, 404);
+  }
+
+  const db = createAdminClient({ baseUrl, apiKey });
+
+  let rag: RagAnswer;
   try {
-    const queryEmbedding = await createEmbedding(question, openRouterKey);
-
-    const db = createAdminClient({ baseUrl, apiKey });
-    const { data, error } = await db.database.rpc('match_documents', {
-      query_embedding: queryEmbedding,
-      match_count: MATCH_COUNT,
-    });
-    if (error) {
-      throw new Error(`Falló la búsqueda de documentos: ${error.message}`);
-    }
-    const matches = (data ?? []) as Match[];
-
-    if (matches.length === 0) {
-      return json({ answer: NOT_FOUND_ANSWER, found: false, model: null, sources: [] });
-    }
-
-    const answer = await createAnswer(question, matches, chatModel, openRouterKey);
-    const found = !normalize(answer).includes(normalize(NOT_FOUND_ANSWER));
-
-    return json({
-      answer,
-      found,
-      model: chatModel,
-      sources: found
-        ? matches.map((match) => ({
-            id: match.id,
-            source: match.source,
-            chunk_index: match.chunk_index,
-            score: Number(match.score.toFixed(4)),
-            excerpt: excerpt(match.content),
-          }))
-        : [],
-    });
+    rag = await answerQuestion(question, db, chatModel, openRouterKey);
   } catch (error) {
     console.error('ask failed', error);
     return json({ error: error instanceof Error ? error.message : 'Error inesperado.' }, 502);
   }
+
+  // Pregunta y respuesta se guardan juntas (una transacción): nunca queda una sin la otra.
+  const { data, error } = await db.database.rpc('save_chat_exchange', {
+    p_owner_id: user.id,
+    p_chat_id: chatId,
+    p_question: question,
+    p_answer: rag.answer,
+    p_sources: rag.sources,
+    p_model: rag.model,
+    p_title: toTitle(question),
+  });
+  if (error) {
+    console.error('save_chat_exchange failed', error);
+    return json({ error: `No se pudo guardar el mensaje en el chat: ${error.message}`, ...rag }, 500);
+  }
+
+  return json({ ...rag, ...(data as Record<string, unknown>) }, chatId ? 200 : 201);
 }
 
-async function isAuthorized(req: Request, baseUrl: string, apiKey: string): Promise<boolean> {
-  const header = req.headers.get('Authorization') ?? '';
-  const token = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : '';
-  if (!token) {
-    return false;
+// ---------------------------------------------------------------------------
+// RAG
+// ---------------------------------------------------------------------------
+
+async function answerQuestion(
+  question: string,
+  db: ReturnType<typeof createAdminClient>,
+  chatModel: string,
+  openRouterKey: string,
+): Promise<RagAnswer> {
+  const queryEmbedding = await createEmbedding(question, openRouterKey);
+
+  const { data, error } = await db.database.rpc('match_documents', {
+    query_embedding: queryEmbedding,
+    match_count: MATCH_COUNT,
+  });
+  if (error) {
+    throw new Error(`Falló la búsqueda de documentos: ${error.message}`);
   }
-  if (safeEqual(token, apiKey)) {
-    return true;
+  const matches = (data ?? []) as Match[];
+
+  if (matches.length === 0) {
+    return { answer: NOT_FOUND_ANSWER, found: false, model: null, sources: [] };
   }
-  // El anon key no tiene usuario asociado, así que no pasa esta verificación.
-  const client = createClient({ baseUrl, accessToken: token });
-  const { data } = await client.auth.getCurrentUser();
-  return Boolean(data?.user?.id);
+
+  const answer = await createAnswer(question, matches, chatModel, openRouterKey);
+  const found = !normalize(answer).includes(normalize(NOT_FOUND_ANSWER));
+
+  return {
+    answer,
+    found,
+    model: chatModel,
+    sources: found
+      ? matches.map((match) => ({
+          id: match.id,
+          source: match.source,
+          chunk_index: match.chunk_index,
+          score: Number(match.score.toFixed(4)),
+          excerpt: excerpt(match.content),
+        }))
+      : [],
+  };
 }
 
 async function createEmbedding(input: string, openRouterKey: string): Promise<number[]> {
@@ -175,11 +226,51 @@ async function openRouter<T>(path: string, body: unknown, openRouterKey: string)
   return response.json();
 }
 
+// ---------------------------------------------------------------------------
+// Auth y chats
+// ---------------------------------------------------------------------------
+
+/** Solo usuarios con sesión: el anon key y la API key no tienen usuario asociado. */
+async function currentUser(req: Request, baseUrl: string): Promise<User | null> {
+  const header = req.headers.get('Authorization') ?? '';
+  const token = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : '';
+  if (!token) {
+    return null;
+  }
+  const { data } = await createClient({ baseUrl, accessToken: token }).auth.getCurrentUser();
+  return data?.user?.id ? { id: data.user.id, token } : null;
+}
+
+/** Consulta con el token del usuario: RLS solo deja ver sus propios chats. */
+async function ownsChat(baseUrl: string, token: string, chatId: string): Promise<boolean> {
+  const { data, error } = await createClient({ baseUrl, accessToken: token })
+    .database.from('chats')
+    .select('id')
+    .eq('id', chatId)
+    .limit(1);
+  return !error && Array.isArray(data) && data.length === 1;
+}
+
+/** Título del chat a partir de la primera pregunta, cortado en una palabra completa. */
+function toTitle(question: string): string {
+  const singleLine = question.replace(/\s+/g, ' ').trim();
+  if (singleLine.length <= TITLE_CHARS) {
+    return singleLine;
+  }
+  const cut = singleLine.slice(0, TITLE_CHARS);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${(lastSpace > TITLE_CHARS / 2 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
+}
+
+// ---------------------------------------------------------------------------
+// Utilidades
+// ---------------------------------------------------------------------------
+
 /** Minúsculas, sin acentos ni puntuación, para comparar la respuesta "no encontrada". */
 function normalize(text: string): string {
   return text
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^\p{L}\p{N}\s]/gu, '')
     .replace(/\s+/g, ' ')
     .trim()
@@ -188,18 +279,6 @@ function normalize(text: string): string {
 
 function excerpt(content: string): string {
   return content.length > EXCERPT_CHARS ? `${content.slice(0, EXCERPT_CHARS).trimEnd()}…` : content;
-}
-
-/** Comparación en tiempo constante para no filtrar la API key por timing. */
-function safeEqual(a: string, b: string): boolean {
-  const encoder = new TextEncoder();
-  const left = encoder.encode(a);
-  const right = encoder.encode(b);
-  let diff = left.length ^ right.length;
-  for (let i = 0; i < Math.max(left.length, right.length); i++) {
-    diff |= (left[i] ?? 0) ^ (right[i] ?? 0);
-  }
-  return diff === 0;
 }
 
 function json(body: unknown, status = 200): Response {
