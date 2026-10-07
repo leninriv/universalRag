@@ -4,12 +4,11 @@ import { TagModule } from 'primeng/tag';
 
 /** Placeholder para módulos que aún no están implementados. */
 @Component({
-  selector: 'app-coming-soon',
-  standalone: true,
-  imports: [AvatarModule, TagModule],
-  templateUrl: './coming-soon.component.html',
-  host: { class: 'flex h-full align-items-center justify-content-center p-4' },
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-coming-soon',
+    imports: [AvatarModule, TagModule],
+    templateUrl: './coming-soon.component.html',
+    host: { class: 'flex h-full align-items-center justify-content-center p-4' },
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ComingSoonComponent {
   /** Nombre del módulo, p. ej. "FileManager". */

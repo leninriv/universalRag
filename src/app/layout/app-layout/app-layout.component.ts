@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { SidebarModule } from 'primeng/sidebar';
+import { DrawerModule } from 'primeng/drawer';
 import { filter } from 'rxjs';
 
 import { BrandComponent } from '../brand/brand.component';
@@ -11,11 +11,10 @@ import { TopbarComponent } from '../topbar/topbar.component';
 
 /** Shell de la aplicación: menú lateral colapsable en desktop y drawer en pantallas pequeñas. */
 @Component({
-  selector: 'app-layout',
-  standalone: true,
-  imports: [RouterOutlet, SidebarModule, BrandComponent, SideNavComponent, TopbarComponent],
-  templateUrl: './app-layout.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-layout',
+    imports: [RouterOutlet, DrawerModule, BrandComponent, SideNavComponent, TopbarComponent],
+    templateUrl: './app-layout.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppLayoutComponent {
   private readonly layout = inject(LayoutService);

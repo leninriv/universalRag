@@ -6,13 +6,12 @@ import { NAV_ITEMS } from '../navigation';
 
 /** Menú de navegación entre módulos. Se usa en el panel lateral (desktop) y en el drawer (mobile). */
 @Component({
-  selector: 'app-side-nav',
-  standalone: true,
-  imports: [MenuModule],
-  template: `
+    selector: 'app-side-nav',
+    imports: [MenuModule],
+    template: `
     <p-menu [model]="items()" [styleClass]="collapsed() ? 'app-nav-menu app-nav-menu-collapsed' : 'app-nav-menu'" />
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SideNavComponent {
   /** Solo íconos; el nombre de cada módulo se muestra como tooltip. */

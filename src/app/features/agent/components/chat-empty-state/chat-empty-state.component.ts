@@ -11,12 +11,11 @@ interface PromptSuggestion {
 
 /** Bienvenida de un chat nuevo con sugerencias de preguntas. */
 @Component({
-  selector: 'app-chat-empty-state',
-  standalone: true,
-  imports: [AvatarModule, ButtonModule],
-  templateUrl: './chat-empty-state.component.html',
-  host: { class: 'flex flex-column align-items-center justify-content-center py-4' },
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-chat-empty-state',
+    imports: [AvatarModule, ButtonModule],
+    templateUrl: './chat-empty-state.component.html',
+    host: { class: 'flex flex-column align-items-center justify-content-center py-4' },
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatEmptyStateComponent {
   readonly promptSelected = output<string>();

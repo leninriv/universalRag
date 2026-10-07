@@ -22,11 +22,11 @@
 </div>
 
 <!-- Menú lateral (mobile) -->
-<p-sidebar [(visible)]="mobileNavVisible" styleClass="app-drawer w-16rem">
+<p-drawer [(visible)]="mobileNavVisible" styleClass="app-drawer w-16rem">
   <ng-template pTemplate="header">
     <app-brand />
   </ng-template>
   <nav class="px-2" aria-label="Módulos">
     <app-side-nav />
   </nav>
-</p-sidebar>
+</p-drawer>
