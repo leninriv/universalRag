@@ -4,50 +4,34 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, ou
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatMenuModule } from '@angular/material/menu';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { map } from 'rxjs';
 
-import { DocumentStatus, StoredDocument } from '../../models/document.model';
-import { FileSizePipe } from '../../pipes/file-size.pipe';
+import { StoredDocument } from '../../models/document.model';
 import { fileTypeOf } from '../../utils/file-rules';
 
-const STATUS_LABELS: Record<DocumentStatus, string> = {
-  indexed: 'Indexado',
-  processing: 'Procesando',
-  error: 'Error',
-};
-
-const ALL_COLUMNS = ['name', 'type', 'size', 'uploadedAt', 'status', 'actions'];
-/** En pantallas chicas solo nombre (con estado y tamaño debajo) y acciones. */
+const ALL_COLUMNS = ['name', 'type', 'uploadedAt', 'actions'];
+/** En pantallas chicas solo el nombre (con la fecha debajo) y acciones. */
 const COMPACT_COLUMNS = ['name', 'actions'];
 
-/** Tabla de documentos con buscador, orden, paginación, estado de indexación y acciones por fila. */
+/** Tabla de documentos con buscador, orden y paginación. */
 @Component({
   selector: 'app-document-table',
   imports: [
     DatePipe,
     FormsModule,
     MatButtonModule,
-    MatChipsModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatMenuModule,
     MatPaginatorModule,
-    MatProgressSpinnerModule,
     MatSortModule,
     MatTableModule,
-    MatTooltipModule,
-    FileSizePipe,
   ],
   templateUrl: './document-table.component.html',
   host: { class: 'block' },
@@ -57,13 +41,11 @@ export class DocumentTableComponent {
   readonly documents = input.required<StoredDocument[]>();
   /** Muestra el skeleton mientras no haya documentos. */
   readonly loading = input(false);
-  readonly download = output<StoredDocument>();
-  readonly reprocess = output<StoredDocument>();
+
   readonly remove = output<StoredDocument>();
 
   protected readonly search = signal('');
   protected readonly dataSource = new MatTableDataSource<StoredDocument>([]);
-  protected readonly statusLabels = STATUS_LABELS;
   protected readonly fileTypeOf = fileTypeOf;
   protected readonly skeletonRows = [35, 28, 40, 30];
 
@@ -85,12 +67,8 @@ export class DocumentTableComponent {
       switch (column) {
         case 'name':
           return doc.name.toLowerCase();
-        case 'size':
-          return doc.size;
         case 'uploadedAt':
           return doc.uploadedAt;
-        case 'status':
-          return STATUS_LABELS[doc.status];
         default:
           return '';
       }
@@ -108,13 +86,5 @@ export class DocumentTableComponent {
       this.dataSource.sort = this.sort() ?? null;
       this.dataSource.paginator = this.paginator() ?? null;
     });
-  }
-
-  protected statusLabel(doc: StoredDocument): string {
-    return STATUS_LABELS[doc.status];
-  }
-
-  protected chunkLabel(count: number | null): string {
-    return count === 1 ? '1 fragmento indexado' : `${count ?? 0} fragmentos indexados`;
   }
 }

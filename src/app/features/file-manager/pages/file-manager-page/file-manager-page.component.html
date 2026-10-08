@@ -43,8 +43,6 @@
       <app-document-table
         [documents]="documentService.documents()"
         [loading]="documentService.loading()"
-        (download)="onDownload($event)"
-        (reprocess)="onReprocess($event)"
         (remove)="onRemove($event)"
       />
     </mat-card-content>

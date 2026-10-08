@@ -48,25 +48,12 @@ export class FileManagerPageComponent {
     this.documentService.load();
   }
 
-  protected onDownload(doc: StoredDocument): void {
-    this.documentService.download(doc).subscribe({
-      error: () => this.notify(`No se pudo descargar «${doc.name}».`),
-    });
-  }
-
-  protected onReprocess(doc: StoredDocument): void {
-    this.documentService.reprocess(doc.id).subscribe({
-      next: () => this.notify(`Reprocesando «${doc.name}»…`),
-      error: () => this.notify(`No se pudo reprocesar «${doc.name}».`),
-    });
-  }
-
   protected onRemove(doc: StoredDocument): void {
     this.dialog
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
         data: {
           title: '¿Eliminar documento?',
-          message: `«${doc.name}» se eliminará junto con su contenido indexado. El agente ya no podrá usarlo para responder.`,
+          message: `«${doc.name}» se eliminará junto con todo su contenido indexado. El agente ya no podrá usarlo para responder.`,
           confirmLabel: 'Eliminar',
           destructive: true,
         },
@@ -74,7 +61,7 @@ export class FileManagerPageComponent {
       .afterClosed()
       .pipe(
         filter(Boolean),
-        switchMap(() => this.documentService.remove(doc.id)),
+        switchMap(() => this.documentService.remove(doc)),
       )
       .subscribe({
         next: () => this.notify('Documento eliminado.'),

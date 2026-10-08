@@ -40,7 +40,6 @@ Aplicación Angular 22 (standalone) con **Angular Material 22** (Material 3) com
 | `authGuard` / `guestGuard` | `core/guards/auth.guard.ts` | `authGuard` protege rutas privadas (redirige a `/login?returnUrl=…`); `guestGuard` saca de `/login` a quien ya tiene sesión. |
 | `authTokenInterceptor` | `core/interceptors/auth-token.interceptor.ts` | Envía `Authorization: Bearer <token>` en las peticiones a `API_CONFIG.baseUrl` (menos el login). |
 | `sessionInterceptor` | `core/interceptors/session.interceptor.ts` | Recibe el accessToken de la respuesta del login y lo guarda (vence según el `exp` del JWT); ante un 401 cierra sesión y lleva al login. |
-| `documentsMockInterceptor` | `features/file-manager/mocks/documents-mock.interceptor.ts` | Backend falso de `/documents` (listado, subida con progreso, borrado, descarga, reprocesar). Se activa con `API_CONFIG.useMocks` en `core/config/api.config.ts`. |
 | `ThemeService` | `core/services/theme.service.ts` | Tema actual (`mode`, `isDark`, `toggle()`); se recuerda en `localStorage`. |
 | `LOCALE_ID` `es` / `SpanishPaginatorIntl` | `app.config.ts` / `core/i18n/paginator-intl.ts` | Fechas y números (`date`, `formatNumber`) en español y textos de `mat-paginator` en español, para toda la app. |
 | `LayoutService` | `layout/layout.service.ts` | Menú lateral colapsado (desktop), drawer abierto (mobile) y contenido de la barra superior. |
@@ -61,11 +60,11 @@ Aplicación Angular 22 (standalone) con **Angular Material 22** (Material 3) com
 | `<app-chat-composer>` | `features/agent/components/chat-composer` | Caja para escribir y enviar mensajes. |
 | `<app-chat-typing-indicator>` | `features/agent/components/chat-typing-indicator` | Placeholder mientras responde el agente. |
 | `<app-chat-history>` | `features/agent/components/chat-history` | Nuevo chat + buscador + historial agrupado por fecha. |
-| `DocumentService` | `features/file-manager/services/document.service.ts` | Documentos (`documents`, `loading`, `loadError`), cola de subidas con progreso (`uploads`, `upload()`, `cancelUpload()`), `remove()`, `reprocess()`, `download()`. Refresca el listado mientras haya documentos en `processing`. |
+| `DocumentService` | `features/file-manager/services/document.service.ts` | Documentos (`documents`, `loading`, `loadError`, `load()` → RPC `list_documents`) y cola de subidas con progreso (`uploads`, `upload()` → edge function `ingest`, `cancelUpload()`), `remove()` → edge function `delete-document`. |
 | `<app-file-drop-zone>` | `features/file-manager/components/file-drop-zone` | Zona drag & drop + botón "Seleccionar archivos" (`accept`, `hint`, `multiple`; emite `filesSelected`). |
 | `<app-upload-queue>` | `features/file-manager/components/upload-queue` | Subidas en curso con `mat-progress-bar` y las que fallaron (`cancelled`, `dismissed`). |
-| `<app-document-table>` | `features/file-manager/components/document-table` | `mat-table` de documentos con buscador, orden, paginación, chip de estado y menú (descargar, reprocesar, eliminar). En mobile solo nombre + acciones. |
-| `fileSize` (pipe) / `file-rules.ts` | `features/file-manager/pipes` / `features/file-manager/utils` | Tamaño legible (`1,2 MB`); tipos y tamaño permitidos (`UPLOAD_RULES`, `validateFile()`, `fileTypeOf()`). |
+| `<app-document-table>` | `features/file-manager/components/document-table` | `mat-table` de documentos con buscador, orden, paginación y botón eliminar (`remove`). En mobile solo nombre + fecha. |
+| `fileSize` (pipe) / `file-rules.ts` | `features/file-manager/pipes` / `features/file-manager/utils` | Tamaño legible (`1,2 MB`); tipos y tamaño permitidos (`UPLOAD_RULES`: txt/md/csv, 200 KB; `validateFile()`, `fileTypeOf()`). |
 
 ## Arquitectura
 
@@ -135,7 +134,7 @@ Endpoints (todos con `Authorization: Bearer <token del usuario>`):
 
 ## Estado actual
 
-- Solo UI: `features/agent/services/chat.service.ts` guarda los chats en memoria y simula las respuestas del agente. Al conectar el backend, reemplazar la lógica de ese servicio manteniendo su API pública.
+- Solo UI (salvo login y FileManager): `features/agent/services/chat.service.ts` guarda los chats en memoria y simula las respuestas del agente. Al conectar el backend, reemplazar la lógica de ese servicio manteniendo su API pública.
 - Login **real** con InsForge vía HTTP (`AuthService` → `POST /api/auth/sessions`, sin `@insforge/sdk`); `API_CONFIG.baseUrl` es la URL del proyecto. No hay refresh token: al vencer el access token (`exp` del JWT) se vuelve al login. El proyecto exige verificar el correo (`require_email_verification`). El resto del frontend (chats, ask) sigue sin conectarse.
-- FileManager con **mock**: `documentsMockInterceptor` (`features/file-manager/mocks/`, activado por `API_CONFIG.useMocks`) simula `GET/POST <baseUrl>/documents`, `DELETE …/documents/:id`, `GET …/:id/download` y `POST …/:id/reprocess` (contrato documentado en ese archivo). Guarda los documentos en memoria (se pierden al recargar) y simula la indexación; un archivo con "error" en el nombre falla la primera vez, para probar "Reprocesar". Al existir la API real: poner `API_CONFIG.useMocks = false`, borrar `features/file-manager/mocks/` y quitarlo de `app.config.ts`; `DocumentService` no cambia. Nota: la función `ingest` hoy recibe texto plano, así que la API real tendrá que extraer el texto de PDF/DOCX/XLSX/CSV antes de ingestarlo.
+- FileManager **real**: `DocumentService` lista con `POST /api/database/rpc/list_documents` (solo `source` + `uploaded_at`) y sube con `POST /functions/ingest` `{ text, source }` (lee el archivo como texto en el navegador; re-subir el mismo nombre lo reemplaza). Por eso solo se aceptan txt/md/csv de hasta 200 KB. Eliminar pide confirmación y llama a `POST /functions/delete-document` `{ source }` (`insforge/functions/delete-document.ts`, borra todos los chunks del `source`). No existen endpoints de descargar ni reprocesar. Para PDF/DOCX/XLSX falta extraer el texto antes de ingestar.
 - Las opciones "Perfil" y "Configuración" del menú de usuario aún no tienen acción.

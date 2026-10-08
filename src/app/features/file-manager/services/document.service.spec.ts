@@ -1,23 +1,11 @@
 import { HttpEventType, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 
-import { StoredDocument } from '../models/document.model';
-import { DOCUMENTS_URL, DocumentService } from './document.service';
+import { DELETE_DOCUMENT_URL, DocumentService, INGEST_URL, LIST_DOCUMENTS_URL } from './document.service';
 
-function storedDocument(changes: Partial<StoredDocument> = {}): StoredDocument {
-  return {
-    id: crypto.randomUUID(),
-    name: 'manual.pdf',
-    mimeType: 'application/pdf',
-    size: 2048,
-    status: 'indexed',
-    uploadedAt: new Date().toISOString(),
-    chunkCount: 1,
-    errorMessage: null,
-    ...changes,
-  };
-}
+/** `File.text()` es asíncrono: se espera a que la petición de ingesta salga. */
+const fileRead = () => new Promise((resolve) => setTimeout(resolve, 50));
 
 describe('DocumentService', () => {
   let service: DocumentService;
@@ -31,31 +19,72 @@ describe('DocumentService', () => {
 
   afterEach(() => http.verify());
 
+  it('carga el listado desde list_documents', () => {
+    service.load();
+    expect(service.loading()).toBeTrue();
+
+    http
+      .expectOne({ method: 'POST', url: LIST_DOCUMENTS_URL })
+      .flush([{ source: 'manual.txt', uploaded_at: '2026-10-05T10:00:00Z' }]);
+
+    expect(service.loading()).toBeFalse();
+    expect(service.documents()).toEqual([{ name: 'manual.txt', uploadedAt: '2026-10-05T10:00:00Z' }]);
+  });
+
+  it('informa el error si no se puede cargar el listado', () => {
+    service.load();
+    http.expectOne(LIST_DOCUMENTS_URL).flush({ error: 'No autorizado' }, { status: 401, statusText: 'Unauthorized' });
+
+    expect(service.loadError()).toBe('No autorizado');
+    expect(service.loading()).toBeFalse();
+  });
+
   it('deja en la cola con error los archivos inválidos sin llamar a la API', () => {
     service.upload([new File(['x'], 'programa.exe')]);
 
-    http.expectNone(DOCUMENTS_URL);
-    expect(service.uploads().length).toBe(1);
+    http.expectNone(INGEST_URL);
     expect(service.uploads()[0].state).toBe('error');
     expect(service.uploads()[0].errorMessage).toBe('Tipo de archivo no permitido.');
   });
 
-  it('sube un archivo informando el progreso y lo agrega al listado', () => {
+  it('ingesta el texto del archivo y lo agrega al listado', async () => {
     service.upload([new File(['hola'], 'notas.txt')]);
+    await fileRead();
 
-    const req = http.expectOne({ method: 'POST', url: DOCUMENTS_URL });
-    expect((req.request.body as FormData).get('file')).toEqual(jasmine.any(File));
+    const req = http.expectOne({ method: 'POST', url: INGEST_URL });
+    expect(req.request.body).toEqual({ text: 'hola', source: 'notas.txt' });
     req.event({ type: HttpEventType.UploadProgress, loaded: 2, total: 4 });
     expect(service.uploads()[0].progress).toBe(50);
 
-    req.flush(storedDocument({ name: 'notas.txt', status: 'processing' }), { status: 201, statusText: 'Created' });
+    req.flush({ source: 'notas.txt' }, { status: 201, statusText: 'Created' });
     expect(service.uploads()).toEqual([]);
     expect(service.documents().map((doc) => doc.name)).toEqual(['notas.txt']);
   });
 
-  it('cancelar una subida la quita de la cola y aborta la petición', () => {
+  it('re-ingestar un documento lo reemplaza en el listado', async () => {
+    service.upload([new File(['a'], 'notas.txt')]);
+    await fileRead();
+    http.expectOne(INGEST_URL).flush({}, { status: 201, statusText: 'Created' });
+    service.upload([new File(['b'], 'notas.txt')]);
+    await fileRead();
+    http.expectOne(INGEST_URL).flush({}, { status: 201, statusText: 'Created' });
+
+    expect(service.documents().length).toBe(1);
+  });
+
+  it('muestra el error de ingest cuando la subida falla', async () => {
     service.upload([new File(['hola'], 'notas.txt')]);
-    const req = http.expectOne(DOCUMENTS_URL);
+    await fileRead();
+    http.expectOne(INGEST_URL).flush({ error: 'Falló el embedding' }, { status: 502, statusText: 'Bad Gateway' });
+
+    expect(service.uploads()[0].state).toBe('error');
+    expect(service.uploads()[0].errorMessage).toBe('Falló el embedding');
+  });
+
+  it('cancelar una subida la quita de la cola', async () => {
+    service.upload([new File(['hola'], 'notas.txt')]);
+    await fileRead();
+    const req = http.expectOne(INGEST_URL);
 
     service.cancelUpload(service.uploads()[0].id);
 
@@ -63,28 +92,18 @@ describe('DocumentService', () => {
     expect(service.uploads()).toEqual([]);
   });
 
-  it('remove quita el documento del listado', () => {
+  it('elimina un documento llamando a delete-document y lo quita del listado', () => {
     service.load();
-    http.expectOne(DOCUMENTS_URL).flush([storedDocument({ id: 'a' }), storedDocument({ id: 'b' })]);
+    http.expectOne(LIST_DOCUMENTS_URL).flush([
+      { source: 'a.txt', uploaded_at: '2026-10-05T10:00:00Z' },
+      { source: 'b.txt', uploaded_at: '2026-10-04T10:00:00Z' },
+    ]);
 
-    service.remove('a').subscribe();
-    http.expectOne({ method: 'DELETE', url: `${DOCUMENTS_URL}/a` }).flush(null, { status: 204, statusText: 'No Content' });
+    service.remove(service.documents()[0]).subscribe();
 
-    expect(service.documents().map((doc) => doc.id)).toEqual(['b']);
+    const req = http.expectOne({ method: 'POST', url: DELETE_DOCUMENT_URL });
+    expect(req.request.body).toEqual({ source: 'a.txt' });
+    req.flush({ source: 'a.txt', deleted_chunks: 3 });
+    expect(service.documents().map((doc) => doc.name)).toEqual(['b.txt']);
   });
-
-  it('refresca el listado solo mientras haya documentos procesando', fakeAsync(() => {
-    service.load();
-    http.expectOne(DOCUMENTS_URL).flush([storedDocument({ status: 'processing' })]);
-    TestBed.tick();
-
-    tick(3000);
-    const polls = http.match(DOCUMENTS_URL);
-    expect(polls.length).toBe(1);
-    polls[0].flush([storedDocument({ status: 'indexed' })]);
-    TestBed.tick();
-
-    tick(10_000);
-    expect(http.match(DOCUMENTS_URL).length).toBe(0);
-  }));
 });

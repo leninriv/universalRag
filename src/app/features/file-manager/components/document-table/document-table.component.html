@@ -23,9 +23,9 @@
             <mat-icon class="flex-shrink-0 text-color-secondary" aria-hidden="true">{{ fileTypeOf(doc.name).icon }}</mat-icon>
             <div class="flex flex-column min-w-0">
               <span class="white-space-nowrap overflow-hidden text-overflow-ellipsis" [title]="doc.name">{{ doc.name }}</span>
-              <!-- En pantallas chicas el estado y el tamaño van bajo el nombre (sus columnas se ocultan). -->
+              <!-- En pantallas chicas la fecha va bajo el nombre (su columna se oculta). -->
               @if (compact()) {
-                <span class="text-xs text-color-secondary">{{ statusLabel(doc) }} · {{ doc.size | fileSize }}</span>
+                <span class="text-xs text-color-secondary">{{ doc.uploadedAt | date: 'd MMM y, HH:mm' }}</span>
               }
             </div>
           </div>
@@ -37,55 +37,16 @@
         <td mat-cell *matCellDef="let doc">{{ fileTypeOf(doc.name).label }}</td>
       </ng-container>
 
-      <ng-container matColumnDef="size">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Tamaño</th>
-        <td mat-cell *matCellDef="let doc" class="white-space-nowrap">{{ doc.size | fileSize }}</td>
-      </ng-container>
-
       <ng-container matColumnDef="uploadedAt">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>Fecha de carga</th>
         <td mat-cell *matCellDef="let doc" class="white-space-nowrap">{{ doc.uploadedAt | date: 'd MMM y, HH:mm' }}</td>
       </ng-container>
 
-      <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Estado</th>
-        <td mat-cell *matCellDef="let doc">
-          <mat-chip-set [attr.aria-label]="'Estado de ' + doc.name">
-            @switch (doc.status) {
-              @case ('indexed') {
-                <mat-chip highlighted disableRipple [matTooltip]="chunkLabel(doc.chunkCount)">
-                  <mat-icon matChipAvatar>check_circle</mat-icon>
-                  {{ statusLabels.indexed }}
-                </mat-chip>
-              }
-              @case ('processing') {
-                <mat-chip disableRipple matTooltip="Extrayendo el texto y generando los embeddings">
-                  <mat-progress-spinner matChipAvatar mode="indeterminate" diameter="16" />
-                  {{ statusLabels.processing }}
-                </mat-chip>
-              }
-              @default {
-                <mat-chip class="app-chip-error" disableRipple [matTooltip]="doc.errorMessage">
-                  <mat-icon matChipAvatar>error</mat-icon>
-                  {{ statusLabels.error }}
-                </mat-chip>
-              }
-            }
-          </mat-chip-set>
-        </td>
-      </ng-container>
-
       <ng-container matColumnDef="actions">
         <th mat-header-cell *matHeaderCellDef aria-label="Acciones"></th>
         <td mat-cell *matCellDef="let doc" class="text-right">
-          <button
-            matIconButton
-            type="button"
-            [matMenuTriggerFor]="actionsMenu"
-            [matMenuTriggerData]="{ doc: doc }"
-            [attr.aria-label]="'Acciones de ' + doc.name"
-          >
-            <mat-icon>more_vert</mat-icon>
+          <button matIconButton type="button" [attr.aria-label]="'Eliminar ' + doc.name" (click)="remove.emit(doc)">
+            <mat-icon>delete</mat-icon>
           </button>
         </td>
       </ng-container>
@@ -108,20 +69,3 @@
     aria-label="Paginación de documentos"
   />
 }
-
-<mat-menu #actionsMenu="matMenu" xPosition="before">
-  <ng-template matMenuContent let-doc="doc">
-    <button mat-menu-item type="button" (click)="download.emit(doc)">
-      <mat-icon>download</mat-icon>
-      <span>Descargar</span>
-    </button>
-    <button mat-menu-item type="button" [disabled]="doc.status === 'processing'" (click)="reprocess.emit(doc)">
-      <mat-icon>refresh</mat-icon>
-      <span>Reprocesar</span>
-    </button>
-    <button mat-menu-item type="button" (click)="remove.emit(doc)">
-      <mat-icon>delete</mat-icon>
-      <span>Eliminar</span>
-    </button>
-  </ng-template>
-</mat-menu>

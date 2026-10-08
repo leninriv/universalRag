@@ -1,27 +1,22 @@
-/** Tipos de archivo que se pueden cargar, con su etiqueta e ícono (Material Symbols). */
+/** Tipos de archivo que se pueden cargar (texto plano: `ingest` recibe texto, aún no extrae PDF/DOCX/XLSX), con su etiqueta e ícono (Material Symbols). */
 const FILE_TYPES: Record<string, { label: string; icon: string }> = {
-  pdf: { label: 'PDF', icon: 'picture_as_pdf' },
-  docx: { label: 'DOCX', icon: 'description' },
   txt: { label: 'TXT', icon: 'article' },
   md: { label: 'MD', icon: 'article' },
   csv: { label: 'CSV', icon: 'table_chart' },
-  xlsx: { label: 'XLSX', icon: 'table_chart' },
 };
 
 const UNKNOWN_TYPE = { label: 'Archivo', icon: 'draft' };
 
 export const UPLOAD_RULES = {
   extensions: Object.keys(FILE_TYPES),
-  maxSizeBytes: 25 * 1024 * 1024,
+  maxSizeBytes: 200_000,
 } as const;
 
 /** Valor del atributo `accept` del `<input type="file">`. */
 export const ACCEPT_ATTR = UPLOAD_RULES.extensions.map((extension) => `.${extension}`).join(',');
 
 /** Texto de ayuda con los tipos y el tamaño permitidos. */
-export const UPLOAD_HINT = `${UPLOAD_RULES.extensions.map((extension) => extension.toUpperCase()).join(', ')} · máx. ${
-  UPLOAD_RULES.maxSizeBytes / 1024 / 1024
-} MB`;
+export const UPLOAD_HINT = `${UPLOAD_RULES.extensions.map((extension) => extension.toUpperCase()).join(', ')} · máx. ${UPLOAD_RULES.maxSizeBytes / 1000} KB`;
 
 export function fileExtension(name: string): string {
   const dot = name.lastIndexOf('.');
@@ -38,7 +33,7 @@ export function validateFile(file: Pick<File, 'name' | 'size'>): string | null {
     return 'Tipo de archivo no permitido.';
   }
   if (file.size > UPLOAD_RULES.maxSizeBytes) {
-    return `Supera el máximo de ${UPLOAD_RULES.maxSizeBytes / 1024 / 1024} MB.`;
+    return `Supera el máximo de ${UPLOAD_RULES.maxSizeBytes / 1000} KB.`;
   }
   if (file.size === 0) {
     return 'El archivo está vacío.';
