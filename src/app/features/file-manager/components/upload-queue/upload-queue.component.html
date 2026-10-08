@@ -1,0 +1,32 @@
+<mat-list aria-label="Archivos en carga">
+  @for (upload of uploads(); track upload.id) {
+    @let uploading = upload.state === 'uploading';
+    <mat-list-item>
+      <mat-icon matListItemIcon [class.upload-error]="!uploading">{{ uploading ? fileTypeOf(upload.file.name).icon : 'error' }}</mat-icon>
+      <span matListItemTitle [title]="upload.file.name">{{ upload.file.name }}</span>
+      <!-- Un solo elemento raíz por bloque para que se proyecte en el slot matListItemLine. -->
+      @if (uploading) {
+        <div matListItemLine class="flex align-items-center gap-2">
+          <mat-progress-bar
+            class="flex-1"
+            mode="determinate"
+            [value]="upload.progress"
+            [attr.aria-label]="'Progreso de ' + upload.file.name"
+          />
+          <span class="text-xs white-space-nowrap">{{ upload.progress }} % · {{ upload.file.size | fileSize }}</span>
+        </div>
+      } @else {
+        <span matListItemLine class="upload-error" role="alert">{{ upload.errorMessage }}</span>
+      }
+      <button
+        matIconButton
+        matListItemMeta
+        type="button"
+        [attr.aria-label]="(uploading ? 'Cancelar la carga de ' : 'Descartar ') + upload.file.name"
+        (click)="uploading ? cancelled.emit(upload.id) : dismissed.emit(upload.id)"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-list-item>
+  }
+</mat-list>

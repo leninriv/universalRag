@@ -40,15 +40,20 @@ Aplicación Angular 22 (standalone) con **Angular Material 22** (Material 3) com
 | `authGuard` / `guestGuard` | `core/guards/auth.guard.ts` | `authGuard` protege rutas privadas (redirige a `/login?returnUrl=…`); `guestGuard` saca de `/login` a quien ya tiene sesión. |
 | `authTokenInterceptor` | `core/interceptors/auth-token.interceptor.ts` | Envía `Authorization: Bearer <token>` en las peticiones a `API_CONFIG.baseUrl` (menos el login). |
 | `sessionInterceptor` | `core/interceptors/session.interceptor.ts` | Recibe el accessToken de la respuesta del login y lo guarda (vence según el `exp` del JWT); ante un 401 cierra sesión y lleva al login. |
+| `documentsMockInterceptor` | `features/file-manager/mocks/documents-mock.interceptor.ts` | Backend falso de `/documents` (listado, subida con progreso, borrado, descarga, reprocesar). Se activa con `API_CONFIG.useMocks` en `core/config/api.config.ts`. |
 | `ThemeService` | `core/services/theme.service.ts` | Tema actual (`mode`, `isDark`, `toggle()`); se recuerda en `localStorage`. |
+| `LOCALE_ID` `es` / `SpanishPaginatorIntl` | `app.config.ts` / `core/i18n/paginator-intl.ts` | Fechas y números (`date`, `formatNumber`) en español y textos de `mat-paginator` en español, para toda la app. |
 | `LayoutService` | `layout/layout.service.ts` | Menú lateral colapsado (desktop), drawer abierto (mobile) y contenido de la barra superior. |
 | `<app-avatar>` | `shared/components/avatar` | Círculo con ícono o iniciales (`icon`, `label`, `size` = `small`/`normal`/`xlarge`, `variant` = `primary`/`accent`). |
 | `<app-drawer-header>` | `shared/components/drawer-header` | Cabecera de un `mat-sidenav` usado como drawer: contenido proyectado + botón cerrar (`closed`). |
+| `ConfirmDialogComponent` | `shared/components/confirm-dialog` | Diálogo de confirmación: `MatDialog.open(ConfirmDialogComponent, { data: { title, message, confirmLabel, destructive } }).afterClosed()` → `true` si se confirma. |
 | `.app-nav-list` | `src/styles.scss` | Variante de `mat-nav-list` para navegación lateral (subheaders, item activo con `[activated]` + `routerLinkActive`); `.app-nav-list-collapsed` = solo íconos. |
 | `.app-drawer` | `src/styles.scss` | Variante de `mat-sidenav` (`mode="over"`) usada como drawer de navegación. |
 | `.app-dense` | `src/styles.scss` | `mat-form-field` compacto (densidad -4), p. ej. buscadores. |
 | `.app-button-multiline` | `src/styles.scss` | Botón de Material con contenido de varias líneas alineado a la izquierda (tarjetas de sugerencias). |
 | `.app-icon-button-filled` | `src/styles.scss` | `matIconButton` relleno con el color primario (p. ej. "Enviar"). |
+| `.app-button-danger` | `src/styles.scss` | `matButton="filled"` con el color de error, para confirmar acciones destructivas. |
+| `.app-chip-error` | `src/styles.scss` | `mat-chip` con borde, texto e ícono en color de error (p. ej. estado "Error"). |
 | `.app-callout` / `.app-callout-error` | `src/styles.scss` | Aviso en línea informativo / de error. |
 | `.app-skeleton` | `src/styles.scss` | Línea de carga tipo skeleton (ancho con `style="width: …"`). |
 | `.app-content-column` | `src/styles.scss` | Columna central de lectura (max 48rem). |
@@ -56,6 +61,11 @@ Aplicación Angular 22 (standalone) con **Angular Material 22** (Material 3) com
 | `<app-chat-composer>` | `features/agent/components/chat-composer` | Caja para escribir y enviar mensajes. |
 | `<app-chat-typing-indicator>` | `features/agent/components/chat-typing-indicator` | Placeholder mientras responde el agente. |
 | `<app-chat-history>` | `features/agent/components/chat-history` | Nuevo chat + buscador + historial agrupado por fecha. |
+| `DocumentService` | `features/file-manager/services/document.service.ts` | Documentos (`documents`, `loading`, `loadError`), cola de subidas con progreso (`uploads`, `upload()`, `cancelUpload()`), `remove()`, `reprocess()`, `download()`. Refresca el listado mientras haya documentos en `processing`. |
+| `<app-file-drop-zone>` | `features/file-manager/components/file-drop-zone` | Zona drag & drop + botón "Seleccionar archivos" (`accept`, `hint`, `multiple`; emite `filesSelected`). |
+| `<app-upload-queue>` | `features/file-manager/components/upload-queue` | Subidas en curso con `mat-progress-bar` y las que fallaron (`cancelled`, `dismissed`). |
+| `<app-document-table>` | `features/file-manager/components/document-table` | `mat-table` de documentos con buscador, orden, paginación, chip de estado y menú (descargar, reprocesar, eliminar). En mobile solo nombre + acciones. |
+| `fileSize` (pipe) / `file-rules.ts` | `features/file-manager/pipes` / `features/file-manager/utils` | Tamaño legible (`1,2 MB`); tipos y tamaño permitidos (`UPLOAD_RULES`, `validateFile()`, `fileTypeOf()`). |
 
 ## Arquitectura
 
@@ -67,7 +77,7 @@ src/app/
   features/
     auth/            Login (ruta /login, pública)
     agent/           Chat estilo ChatGPT (rutas /agent y /agent/:chatId)
-    file-manager/    Coming soon
+    file-manager/    Carga de documentos + listado de la base de conocimiento (ruta /file-manager)
     open-wa/         Coming soon
 ```
 
@@ -127,4 +137,5 @@ Endpoints (todos con `Authorization: Bearer <token del usuario>`):
 
 - Solo UI: `features/agent/services/chat.service.ts` guarda los chats en memoria y simula las respuestas del agente. Al conectar el backend, reemplazar la lógica de ese servicio manteniendo su API pública.
 - Login **real** con InsForge vía HTTP (`AuthService` → `POST /api/auth/sessions`, sin `@insforge/sdk`); `API_CONFIG.baseUrl` es la URL del proyecto. No hay refresh token: al vencer el access token (`exp` del JWT) se vuelve al login. El proyecto exige verificar el correo (`require_email_verification`). El resto del frontend (chats, ask) sigue sin conectarse.
+- FileManager con **mock**: `documentsMockInterceptor` (`features/file-manager/mocks/`, activado por `API_CONFIG.useMocks`) simula `GET/POST <baseUrl>/documents`, `DELETE …/documents/:id`, `GET …/:id/download` y `POST …/:id/reprocess` (contrato documentado en ese archivo). Guarda los documentos en memoria (se pierden al recargar) y simula la indexación; un archivo con "error" en el nombre falla la primera vez, para probar "Reprocesar". Al existir la API real: poner `API_CONFIG.useMocks = false`, borrar `features/file-manager/mocks/` y quitarlo de `app.config.ts`; `DocumentService` no cambia. Nota: la función `ingest` hoy recibe texto plano, así que la API real tendrá que extraer el texto de PDF/DOCX/XLSX/CSV antes de ingestarlo.
 - Las opciones "Perfil" y "Configuración" del menú de usuario aún no tienen acción.
