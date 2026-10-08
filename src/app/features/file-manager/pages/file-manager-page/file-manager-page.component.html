@@ -1,0 +1,52 @@
+<!-- Título de la página en la barra superior global -->
+<ng-template appTopbarContent>
+  <h1 class="m-0 text-lg font-semibold white-space-nowrap overflow-hidden text-overflow-ellipsis">Documentos</h1>
+</ng-template>
+
+<div class="flex flex-column gap-3 md:gap-4 p-3 md:p-4">
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Cargar documentos</mat-card-title>
+      <mat-card-subtitle>Se indexan automáticamente para que el agente pueda usarlos al responder.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content class="pt-3">
+      <app-file-drop-zone [accept]="accept" [hint]="uploadHint" (filesSelected)="documentService.upload($event)" />
+      @if (documentService.uploads().length) {
+        <app-upload-queue
+          class="mt-2"
+          [uploads]="documentService.uploads()"
+          (cancelled)="documentService.cancelUpload($event)"
+          (dismissed)="documentService.dismissUpload($event)"
+        />
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Documentos cargados</mat-card-title>
+      @if (!documentService.loading() || documentService.documents().length) {
+        <mat-card-subtitle>
+          {{ documentService.documents().length }}
+          {{ documentService.documents().length === 1 ? 'documento' : 'documentos' }}
+        </mat-card-subtitle>
+      }
+    </mat-card-header>
+    <mat-card-content class="pt-3">
+      @if (documentService.loadError(); as error) {
+        <div class="app-callout app-callout-error mb-3" role="alert">
+          <mat-icon>error</mat-icon>
+          <span class="flex-1">{{ error }}</span>
+          <button matButton type="button" (click)="documentService.load()">Reintentar</button>
+        </div>
+      }
+      <app-document-table
+        [documents]="documentService.documents()"
+        [loading]="documentService.loading()"
+        (download)="onDownload($event)"
+        (reprocess)="onReprocess($event)"
+        (remove)="onRemove($event)"
+      />
+    </mat-card-content>
+  </mat-card>
+</div>

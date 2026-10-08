@@ -1,0 +1,19 @@
+<div
+  class="drop-zone flex flex-column align-items-center gap-2 p-4 text-center"
+  [class.drop-zone-active]="dragging()"
+  (dragenter)="onDragEnter($event)"
+  (dragover)="onDragOver($event)"
+  (dragleave)="onDragLeave()"
+  (drop)="onDrop($event)"
+>
+  <mat-icon class="drop-zone-icon" aria-hidden="true">upload_file</mat-icon>
+  <p class="m-0 font-medium">{{ dragging() ? 'Suelta los archivos para cargarlos' : 'Arrastra archivos aquí o' }}</p>
+  <button matButton="tonal" type="button" (click)="fileInput.click()">
+    <mat-icon>folder_open</mat-icon>
+    Seleccionar archivos
+  </button>
+  @if (hint()) {
+    <p class="m-0 text-sm text-color-secondary">{{ hint() }}</p>
+  }
+  <input #fileInput type="file" hidden [accept]="accept()" [multiple]="multiple()" (change)="onInputChange(fileInput)" />
+</div>

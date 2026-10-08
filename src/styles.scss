@@ -167,6 +167,28 @@ body {
   }
 }
 
+/* Chip con colores de error (p. ej. estado "Error"). Uso: <mat-chip class="app-chip-error"> */
+.mat-mdc-chip.app-chip-error {
+  @include mat.chips-overrides(
+    (
+      outline-color: var(--mat-sys-error),
+      label-text-color: var(--mat-sys-error),
+      with-icon-icon-color: var(--mat-sys-error),
+    )
+  );
+}
+
+/* Botón relleno para acciones destructivas (p. ej. confirmar "Eliminar"). Uso: <button matButton="filled" class="app-button-danger"> */
+.mat-mdc-button-base.app-button-danger {
+  @include mat.button-overrides(
+    (
+      filled-container-color: var(--mat-sys-error),
+      filled-label-text-color: var(--mat-sys-on-error),
+      filled-state-layer-color: var(--mat-sys-on-error),
+    )
+  );
+}
+
 /* Línea de carga tipo skeleton (Material no tiene skeleton). Uso: <div class="app-skeleton" style="width: 75%"> */
 .app-skeleton {
   height: 1rem;
