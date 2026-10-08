@@ -47,7 +47,7 @@ let store: MockEntry[] | null = null;
 
 /**
  * Backend falso de `/documents` hasta que exista la API real (se activa con `API_CONFIG.useMocks`).
- * Va al final de la cadena de interceptores, igual que `authMockInterceptor`. Contrato:
+ * Va al final de la cadena de interceptores. Contrato:
  *
  * - `GET    /documents`               → `StoredDocument[]` (más recientes primero)
  * - `POST   /documents`               → multipart con `file`; 201 `StoredDocument` en `processing` (con eventos de progreso).

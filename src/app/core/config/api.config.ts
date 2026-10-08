@@ -1,9 +1,10 @@
 /**
- * Configuración de la API.
- * Mientras no exista backend, `useMocks` activa los backends falsos `authMockInterceptor` (core/mocks)
- * y `documentsMockInterceptor` (features/file-manager/mocks); ponerlo en `false` cuando existan los endpoints reales.
+ * Configuración de la API (backend InsForge, proyecto universalRag).
+ * La URL es pública; las keys del proyecto nunca van en el frontend.
+ * El login ya usa el backend real; `useMocks` solo activa el backend falso
+ * `documentsMockInterceptor` (features/file-manager/mocks) mientras no exista la API de documentos.
  */
 export const API_CONFIG = {
-  baseUrl: '/api',
+  baseUrl: 'https://fkk6yt6n.us-east.insforge.app',
   useMocks: true,
 } as const;

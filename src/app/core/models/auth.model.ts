@@ -9,12 +9,15 @@ export interface LoginCredentials {
   password: string;
 }
 
-/** Respuesta de `POST /auth/login`. */
+/** Respuesta de `POST /api/auth/sessions` (InsForge, cliente web). */
 export interface LoginResponse {
   accessToken: string;
-  /** Vigencia del token en segundos. */
-  expiresIn: number;
-  user: AuthUser;
+  user: {
+    id: string;
+    email: string;
+    emailVerified?: boolean;
+    profile?: { name?: string | null } | null;
+  };
 }
 
 /** Sesión guardada en el navegador. */

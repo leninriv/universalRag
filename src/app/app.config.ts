@@ -10,7 +10,6 @@ import { API_CONFIG } from './core/config/api.config';
 import { SpanishPaginatorIntl } from './core/i18n/paginator-intl';
 import { authTokenInterceptor } from './core/interceptors/auth-token.interceptor';
 import { sessionInterceptor } from './core/interceptors/session.interceptor';
-import { authMockInterceptor } from './core/mocks/auth-mock.interceptor';
 import { documentsMockInterceptor } from './features/file-manager/mocks/documents-mock.interceptor';
 import { routes } from './app.routes';
 
@@ -21,12 +20,12 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
-    // Orden: envía el token → captura sesión/401 → (mocks) hacen de backend. La respuesta recorre la cadena en sentido inverso.
+    // Orden: envía el token → captura sesión/401 → (mock de documentos) hace de backend. La respuesta recorre la cadena en sentido inverso.
     provideHttpClient(
       withInterceptors([
         authTokenInterceptor,
         sessionInterceptor,
-        ...(API_CONFIG.useMocks ? [authMockInterceptor, documentsMockInterceptor] : []),
+        ...(API_CONFIG.useMocks ? [documentsMockInterceptor] : []),
       ]),
     ),
     { provide: LOCALE_ID, useValue: 'es' },
