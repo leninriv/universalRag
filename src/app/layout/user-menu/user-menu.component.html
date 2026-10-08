@@ -1,23 +1,29 @@
-<button
-  type="button"
-  class="p-link flex border-circle"
-  aria-label="Menú de usuario"
-  aria-haspopup="menu"
-  (click)="menu.toggle($event)"
->
-  <p-avatar [label]="user().initials" shape="circle" styleClass="bg-primary font-semibold" />
+<button matIconButton type="button" aria-label="Menú de usuario" [matMenuTriggerFor]="menu">
+  <app-avatar [label]="user().initials" size="small" />
 </button>
 
-<p-menu #menu [model]="items" [popup]="true" appendTo="body" styleClass="w-15rem">
-  <ng-template pTemplate="start">
-    <div class="flex align-items-center gap-2 px-3 py-2">
-      <p-avatar [label]="user().initials" shape="circle" styleClass="bg-primary font-semibold flex-shrink-0" />
-      <div class="flex flex-column min-w-0">
-        <span class="font-semibold">{{ user().name }}</span>
-        <span class="text-sm text-color-secondary white-space-nowrap overflow-hidden text-overflow-ellipsis">
-          {{ user().email }}
-        </span>
-      </div>
+<mat-menu #menu="matMenu" xPosition="before" class="w-15rem">
+  <div class="flex align-items-center gap-2 px-3 py-2">
+    <app-avatar [label]="user().initials" />
+    <div class="flex flex-column min-w-0">
+      <span class="font-semibold">{{ user().name }}</span>
+      <span class="text-sm text-color-secondary white-space-nowrap overflow-hidden text-overflow-ellipsis">
+        {{ user().email }}
+      </span>
     </div>
-  </ng-template>
-</p-menu>
+  </div>
+  <mat-divider />
+  <button mat-menu-item type="button">
+    <mat-icon>person</mat-icon>
+    <span>Perfil</span>
+  </button>
+  <button mat-menu-item type="button">
+    <mat-icon>settings</mat-icon>
+    <span>Configuración</span>
+  </button>
+  <mat-divider />
+  <button mat-menu-item type="button" (click)="auth.logout()">
+    <mat-icon>logout</mat-icon>
+    <span>Cerrar sesión</span>
+  </button>
+</mat-menu>

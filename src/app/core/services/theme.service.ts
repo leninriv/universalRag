@@ -8,7 +8,7 @@ const STORAGE_KEY = 'app-theme';
 const DARK_CLASS = 'app-dark';
 
 /**
- * Tema claro/oscuro. Alterna la clase `app-dark` en `<html>` (darkModeSelector de PrimeNG, ver app.config.ts). Sin preferencia guardada se usa la del sistema operativo.
+ * Tema claro/oscuro. Alterna la clase `app-dark` y `color-scheme` en `<html>` (el tema de Material usa `light-dark()`, ver src/styles.scss). Sin preferencia guardada se usa la del sistema operativo.
  */
 @Injectable({ providedIn: 'root' })
 export class ThemeService {

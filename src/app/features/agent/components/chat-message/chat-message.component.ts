@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
-import { AvatarModule } from 'primeng/avatar';
-import { ButtonModule } from 'primeng/button';
-import { TooltipModule } from 'primeng/tooltip';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
+import { AvatarComponent } from '../../../../shared/components/avatar/avatar.component';
 import { ChatMessage } from '../../models/chat.model';
 
 const COPIED_FEEDBACK_MS = 1500;
@@ -10,7 +11,7 @@ const COPIED_FEEDBACK_MS = 1500;
 /** Un mensaje del chat: burbuja a la derecha (usuario) o respuesta con avatar (agente). */
 @Component({
     selector: 'app-chat-message',
-    imports: [AvatarModule, ButtonModule, TooltipModule],
+    imports: [MatButtonModule, MatIconModule, MatTooltipModule, AvatarComponent],
     templateUrl: './chat-message.component.html',
     styleUrl: './chat-message.component.scss',
     host: { class: 'block mb-4' },

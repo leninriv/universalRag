@@ -1,19 +1,21 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { MenuItem } from 'primeng/api';
-import { AvatarModule } from 'primeng/avatar';
-import { MenuModule } from 'primeng/menu';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 
 import { AuthService } from '../../core/services/auth.service';
+import { AvatarComponent } from '../../shared/components/avatar/avatar.component';
 
 /** Avatar del usuario en sesión con su menú desplegable. */
 @Component({
     selector: 'app-user-menu',
-    imports: [AvatarModule, MenuModule],
+    imports: [MatButtonModule, MatDividerModule, MatIconModule, MatMenuModule, AvatarComponent],
     templateUrl: './user-menu.component.html',
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UserMenuComponent {
-  private readonly auth = inject(AuthService);
+  protected readonly auth = inject(AuthService);
 
   protected readonly user = computed(() => {
     const user = this.auth.user();
@@ -28,11 +30,4 @@ export class UserMenuComponent {
         .join(''),
     };
   });
-
-  protected readonly items: MenuItem[] = [
-    { label: 'Perfil', icon: 'pi pi-user' },
-    { label: 'Configuración', icon: 'pi pi-cog' },
-    { separator: true },
-    { label: 'Cerrar sesión', icon: 'pi pi-sign-out', command: () => this.auth.logout() },
-  ];
 }

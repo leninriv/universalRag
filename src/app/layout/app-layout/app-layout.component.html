@@ -1,32 +1,34 @@
-<div class="flex h-screen overflow-hidden">
-  <!-- Menú lateral (desktop), colapsable a solo íconos -->
-  <aside
-    class="hidden lg:flex flex-column flex-shrink-0 overflow-hidden surface-section border-right-1 surface-border transition-all transition-duration-200"
-    [class.w-16rem]="!sidebarCollapsed()"
-    [class.w-4rem]="sidebarCollapsed()"
-  >
-    <div class="flex flex-shrink-0 align-items-center h-4rem px-3 border-bottom-1 surface-border">
-      <app-brand [compact]="sidebarCollapsed()" />
-    </div>
-    <nav class="flex-1 overflow-y-auto overflow-x-hidden p-2" aria-label="Módulos">
-      <app-side-nav [collapsed]="sidebarCollapsed()" />
+<mat-sidenav-container class="h-screen">
+  <!-- Menú lateral (mobile) -->
+  <mat-sidenav mode="over" class="app-drawer w-16rem" [(opened)]="mobileNavVisible">
+    <app-drawer-header (closed)="mobileNavVisible.set(false)">
+      <app-brand />
+    </app-drawer-header>
+    <nav class="p-2" aria-label="Módulos">
+      <app-side-nav />
     </nav>
-  </aside>
+  </mat-sidenav>
 
-  <div class="flex flex-column flex-1 min-w-0">
-    <app-topbar />
-    <main class="flex-1 min-h-0 overflow-hidden">
-      <router-outlet />
-    </main>
-  </div>
-</div>
+  <mat-sidenav-content class="flex overflow-hidden">
+    <!-- Menú lateral (desktop), colapsable a solo íconos -->
+    <aside
+      class="hidden lg:flex flex-column flex-shrink-0 overflow-hidden surface-section border-right-1 surface-border transition-all transition-duration-200"
+      [class.w-16rem]="!sidebarCollapsed()"
+      [class.w-4rem]="sidebarCollapsed()"
+    >
+      <div class="flex flex-shrink-0 align-items-center h-4rem px-3 border-bottom-1 surface-border">
+        <app-brand [compact]="sidebarCollapsed()" />
+      </div>
+      <nav class="flex-1 overflow-y-auto overflow-x-hidden p-2" aria-label="Módulos">
+        <app-side-nav [collapsed]="sidebarCollapsed()" />
+      </nav>
+    </aside>
 
-<!-- Menú lateral (mobile) -->
-<p-drawer [(visible)]="mobileNavVisible" styleClass="app-drawer w-16rem">
-  <ng-template pTemplate="header">
-    <app-brand />
-  </ng-template>
-  <nav class="px-2" aria-label="Módulos">
-    <app-side-nav />
-  </nav>
-</p-drawer>
+    <div class="flex flex-column flex-1 min-w-0">
+      <app-topbar />
+      <main class="flex-1 min-h-0 overflow-hidden">
+        <router-outlet />
+      </main>
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>

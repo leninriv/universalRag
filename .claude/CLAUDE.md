@@ -1,6 +1,6 @@
 # Universal RAG — Guía del proyecto
 
-Aplicación Angular 22 (standalone) con **PrimeNG 22** como única librería de componentes UI.
+Aplicación Angular 22 (standalone) con **Angular Material 22** (Material 3) como única librería de componentes UI.
 
 ## Comandos
 
@@ -8,16 +8,17 @@ Aplicación Angular 22 (standalone) con **PrimeNG 22** como única librería de 
 - `npm run build` — build de producción (debe compilar sin errores antes de dar una tarea por terminada)
 - `npm test` — tests unitarios (Karma + Jasmine)
 
-## Regla principal: siempre PrimeNG y reutilizar componentes
+## Regla principal: siempre Angular Material y reutilizar componentes
 
-1. **Toda la UI se construye con componentes de PrimeNG v22.** Documentación: https://primeng.org
-   - Antes de escribir HTML/CSS propio para un control (botón, input, lista, menú, modal, drawer, tabla, tag, avatar, tooltip, skeleton, toast, etc.), busca el equivalente en PrimeNG y úsalo.
-   - No agregues otras librerías de UI (Angular Material, Bootstrap, Tailwind, ng-zorro…).
-   - Íconos: solo **PrimeIcons** (`pi pi-*`).
-   - Layout, espaciado, tipografía y colores: utilidades de **PrimeFlex** (`flex`, `gap-2`, `p-3`, `text-color-secondary`, `surface-border`…). Para colores usa las variables del tema (`var(--primary-color)`, `var(--surface-border)`, `var(--highlight-bg)`…); nunca colores hardcodeados.
-   - El SCSS de componente debe ser mínimo (solo lo que PrimeFlex no cubre). Personalizaciones globales de componentes PrimeNG van en `src/styles.scss` como variantes con clase propia (ej. `.app-nav-menu`).
-   - PrimeNG usa el sistema de temas nuevo (`@primeuix/themes`). `src/styles.scss` mapea las variables clásicas de PrimeFlex (`--surface-*`, `--text-color`, `--primary-color`…) a los tokens `--p-*`. Selectores CSS de PrimeNG: `p-menu-item`, `p-menu-submenu-label`, etc. (ya no `p-menuitem`).
-   - **Todo debe verse bien en tema claro y oscuro.** El tema es Lara con acento indigo, configurado con `providePrimeNG` en `app.config.ts`; el modo oscuro es la clase `app-dark` en `<html>`, que alterna `ThemeService`. Usa clases que dependen del tema (`surface-ground`, `surface-section`, `surface-card`, `surface-border`, `text-color`, `text-color-secondary`, `bg-primary`, `text-primary`) y nunca tonos fijos de paleta (`bg-white`, `bg-gray-100`, `bg-primary-100`, `text-gray-700`…), que no cambian con el tema.
+1. **Toda la UI se construye con componentes de Angular Material v22.** Documentación: https://material.angular.dev
+   - Antes de escribir HTML/CSS propio para un control (botón, input, lista, menú, diálogo, sidenav, tabla, chip, tooltip, snackbar, etc.), busca el equivalente en Angular Material (o en el CDK) y úsalo.
+   - No agregues otras librerías de UI (PrimeNG, Bootstrap, Tailwind, ng-zorro…).
+   - Botones con la API nueva: `matButton` / `matButton="outlined|filled|tonal|elevated"`, `matIconButton`, `matFab`. Carga en un botón: `[showProgress]` + `<mat-progress-spinner progressIndicator>`.
+   - Íconos: solo **Material Symbols** con `<mat-icon>nombre</mat-icon>` (fuente en `index.html`, `MAT_ICON_DEFAULT_OPTIONS` en `app.config.ts`). Los inputs de íconos de los componentes propios reciben el nombre del símbolo (`icon="folder"`).
+   - Layout, espaciado y tipografía: utilidades de **PrimeFlex** (`flex`, `gap-2`, `p-3`, `text-color-secondary`, `surface-border`…), que se mantiene solo como librería CSS de utilidades. Para colores usa los tokens del tema (`var(--mat-sys-primary)`, `var(--mat-sys-surface-container)`, `var(--mat-sys-outline-variant)`…) o las clases de PrimeFlex mapeadas a ellos; nunca colores hardcodeados.
+   - El SCSS de componente debe ser mínimo (solo lo que PrimeFlex no cubre). Personalizaciones globales de componentes Material van en `src/styles.scss` como variantes con clase propia (ej. `.app-nav-list`); para cambiar tokens de un componente usa los mixins `mat.<componente>-overrides(...)`.
+   - Lo que Material no trae (avatar, skeleton, aviso en línea) está resuelto en el catálogo: úsalo en vez de crear otra versión.
+   - **Todo debe verse bien en tema claro y oscuro.** El tema es M3 (`mat.theme` en `src/styles.scss`, primario violet y terciario azure). Los tokens `--mat-sys-*` usan `light-dark()`: el modo lo decide `color-scheme`, que `ThemeService` pone en `<html>` junto con la clase `app-dark`. `src/styles.scss` mapea las variables de PrimeFlex (`--surface-*`, `--text-color`, `--primary-color`, `--highlight-bg`…) a esos tokens, así que usa clases que dependen del tema (`surface-ground`, `surface-section`, `surface-card`, `surface-border`, `text-color`, `text-color-secondary`, `bg-primary`, `text-primary`) y nunca tonos fijos de paleta (`bg-white`, `surface-100`, `bg-gray-100`, `bg-primary-100`, `text-gray-700`…), que no cambian con el tema.
 
 2. **Reutiliza antes de crear.** Antes de crear un componente nuevo:
    - Revisa el catálogo de abajo y `src/app/shared/components/`.
@@ -34,12 +35,23 @@ Aplicación Angular 22 (standalone) con **PrimeNG 22** como única librería de 
 | `<app-topbar>` | `layout/topbar` | Barra superior global: botón del menú lateral, contenido de la página, tema y avatar. |
 | `<ng-template appTopbarContent>` | `layout/topbar/topbar-content.directive.ts` | Proyecta el título/acciones de una página en la barra superior. Úsalo en vez de crear otra barra de encabezado por página. |
 | `<app-theme-toggle>` | `layout/theme-toggle` | Botón para alternar tema claro/oscuro. |
-| `<app-user-menu>` | `layout/user-menu` | Avatar del usuario con menú desplegable. |
+| `<app-user-menu>` | `layout/user-menu` | Avatar del usuario en sesión con menú desplegable (incluye "Cerrar sesión"). |
+| `AuthService` | `core/services/auth.service.ts` | Sesión (`user()`, `isAuthenticated()`, `getToken()`, `login()`, `logout()`); se recuerda en `localStorage` hasta que expira el token. |
+| `authGuard` / `guestGuard` | `core/guards/auth.guard.ts` | `authGuard` protege rutas privadas (redirige a `/login?returnUrl=…`); `guestGuard` saca de `/login` a quien ya tiene sesión. |
+| `authTokenInterceptor` | `core/interceptors/auth-token.interceptor.ts` | Envía `Authorization: Bearer <token>` en las peticiones a `API_CONFIG.baseUrl` (menos el login). |
+| `sessionInterceptor` | `core/interceptors/session.interceptor.ts` | Recibe el token de la respuesta del login y lo guarda; ante un 401 cierra sesión y lleva al login. |
+| `authMockInterceptor` | `core/mocks/auth-mock.interceptor.ts` | Backend falso de `POST /auth/login` (credenciales en `MOCK_CREDENTIALS`). Se activa con `API_CONFIG.useMocks` en `core/config/api.config.ts`. |
 | `ThemeService` | `core/services/theme.service.ts` | Tema actual (`mode`, `isDark`, `toggle()`); se recuerda en `localStorage`. |
 | `LayoutService` | `layout/layout.service.ts` | Menú lateral colapsado (desktop), drawer abierto (mobile) y contenido de la barra superior. |
-| `.app-avatar-accent` | `src/styles.scss` | Variante de `p-avatar` con el color de acento del tema. |
-| `.app-nav-menu` | `src/styles.scss` | Variante de `p-menu` para navegación lateral; resalta el item cuya `routerLink` está activa. |
-| `.app-drawer` | `src/styles.scss` | Variante de `p-drawer` sin padding en el contenido. |
+| `<app-avatar>` | `shared/components/avatar` | Círculo con ícono o iniciales (`icon`, `label`, `size` = `small`/`normal`/`xlarge`, `variant` = `primary`/`accent`). |
+| `<app-drawer-header>` | `shared/components/drawer-header` | Cabecera de un `mat-sidenav` usado como drawer: contenido proyectado + botón cerrar (`closed`). |
+| `.app-nav-list` | `src/styles.scss` | Variante de `mat-nav-list` para navegación lateral (subheaders, item activo con `[activated]` + `routerLinkActive`); `.app-nav-list-collapsed` = solo íconos. |
+| `.app-drawer` | `src/styles.scss` | Variante de `mat-sidenav` (`mode="over"`) usada como drawer de navegación. |
+| `.app-dense` | `src/styles.scss` | `mat-form-field` compacto (densidad -4), p. ej. buscadores. |
+| `.app-button-multiline` | `src/styles.scss` | Botón de Material con contenido de varias líneas alineado a la izquierda (tarjetas de sugerencias). |
+| `.app-icon-button-filled` | `src/styles.scss` | `matIconButton` relleno con el color primario (p. ej. "Enviar"). |
+| `.app-callout` / `.app-callout-error` | `src/styles.scss` | Aviso en línea informativo / de error. |
+| `.app-skeleton` | `src/styles.scss` | Línea de carga tipo skeleton (ancho con `style="width: …"`). |
 | `.app-content-column` | `src/styles.scss` | Columna central de lectura (max 48rem). |
 | `<app-chat-message>` | `features/agent/components/chat-message` | Burbuja de mensaje (usuario / agente). |
 | `<app-chat-composer>` | `features/agent/components/chat-composer` | Caja para escribir y enviar mensajes. |
@@ -54,17 +66,19 @@ src/app/
   layout/            Shell: menú lateral colapsable (desktop) / drawer (mobile) + barra superior
   shared/components/ Componentes reutilizables entre módulos
   features/
+    auth/            Login (ruta /login, pública)
     agent/           Chat estilo ChatGPT (rutas /agent y /agent/:chatId)
     file-manager/    Coming soon
     open-wa/         Coming soon
 ```
 
 - Cada módulo es independiente y se carga con lazy loading desde `app.routes.ts` (`features/<modulo>/<modulo>.routes.ts`). Un módulo no importa nada de otro módulo; lo compartido va a `shared/`.
+- Todas las rutas salvo `/login` están protegidas por `authGuard` (en la ruta del shell, `app.routes.ts`).
 - Para agregar un módulo: crear `features/<modulo>/` con su archivo de rutas, registrarlo en `app.routes.ts` y agregar su item en `layout/navigation.ts`.
 - Componentes standalone con `ChangeDetectionStrategy.OnPush`.
 - Estado con signals (`signal`, `computed`, `input()`, `output()`, `viewChild()`); control flow nativo (`@if`, `@for`).
 - Los parámetros de ruta llegan como `input()` gracias a `withComponentInputBinding()`.
-- Los módulos de PrimeNG se importan en el array `imports` de cada componente (`ButtonModule`, `MenuModule`, …).
+- Los módulos de Angular Material se importan en el array `imports` de cada componente (`MatButtonModule`, `MatIconModule`, …).
 - Textos de la UI en español.
 
 ## Backend (InsForge)
@@ -94,4 +108,5 @@ El backend es [InsForge](https://insforge.dev), proyecto **universalRag** (`proj
 ## Estado actual
 
 - Solo UI: `features/agent/services/chat.service.ts` guarda los chats en memoria y simula las respuestas del agente. Al conectar el backend, reemplazar la lógica de ese servicio manteniendo su API pública.
-- El usuario del avatar es un dato de ejemplo (`CURRENT_USER` en `layout/user-menu`) y sus opciones de menú aún no tienen acción.
+- Login con **mock**: no hay API de autenticación todavía, `authMockInterceptor` responde `POST /api/auth/login`. Al existir el endpoint real: poner `API_CONFIG.useMocks = false` (y ajustar `baseUrl`) y borrar `core/mocks/`; guards, interceptores y `AuthService` no cambian. La respuesta esperada es `LoginResponse` (`core/models/auth.model.ts`).
+- Las opciones "Perfil" y "Configuración" del menú de usuario aún no tienen acción.

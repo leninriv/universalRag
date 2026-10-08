@@ -1,16 +1,25 @@
 <div class="composer flex align-items-end gap-2 surface-card border-1 surface-border border-round-3xl shadow-2 py-2 pl-4 pr-2">
   <textarea
-    pTextarea
-    [autoResize]="true"
-    rows="1"
-    class="composer-input flex-1 border-none shadow-none bg-transparent px-0"
-    style="max-height: 200px"
+    matInput
+    cdkTextareaAutosize
+    cdkAutosizeMinRows="1"
+    cdkAutosizeMaxRows="8"
+    class="composer-input flex-1 align-self-center py-2"
     placeholder="Escribe un mensaje…"
     aria-label="Mensaje"
     [(ngModel)]="draft"
     (keydown.enter)="onEnter($event)"
   ></textarea>
-  <p-button icon="pi pi-arrow-up" [rounded]="true" ariaLabel="Enviar mensaje" [disabled]="!canSend()" (onClick)="submit()" />
+  <button
+    matIconButton
+    type="button"
+    class="app-icon-button-filled flex-shrink-0"
+    aria-label="Enviar mensaje"
+    [disabled]="!canSend()"
+    (click)="submit()"
+  >
+    <mat-icon>arrow_upward</mat-icon>
+  </button>
 </div>
 <p class="m-0 mt-2 text-xs text-center text-color-secondary">
   Agent puede cometer errores. Verifica la información importante.

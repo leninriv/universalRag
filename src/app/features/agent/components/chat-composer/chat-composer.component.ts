@@ -1,12 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
-import { TextareaModule } from 'primeng/textarea';
+import { TextFieldModule } from '@angular/cdk/text-field';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 
 /** Caja de texto para escribir y enviar mensajes. Enter envía, Shift+Enter agrega una línea. */
 @Component({
     selector: 'app-chat-composer',
-    imports: [FormsModule, ButtonModule, TextareaModule],
+    imports: [FormsModule, TextFieldModule, MatButtonModule, MatIconModule, MatInputModule],
     templateUrl: './chat-composer.component.html',
     styleUrl: './chat-composer.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush

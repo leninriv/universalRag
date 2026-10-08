@@ -1,34 +1,32 @@
 <!-- Título del chat en la barra superior global -->
 <ng-template appTopbarContent>
-  <p-button
-    styleClass="lg:hidden"
-    icon="pi pi-history"
-    [text]="true"
-    [rounded]="true"
-    severity="secondary"
-    ariaLabel="Ver historial"
-    (onClick)="historyVisible.set(true)"
-  />
+  <button matIconButton type="button" class="lg:hidden" aria-label="Ver historial" (click)="historyVisible.set(true)">
+    <mat-icon>history</mat-icon>
+  </button>
   <h1 class="m-0 text-lg font-semibold white-space-nowrap overflow-hidden text-overflow-ellipsis">
     {{ title() }}
   </h1>
 </ng-template>
 
-<div class="flex h-full">
-  <!-- Historial (desktop) -->
-  <aside class="hidden lg:flex flex-column flex-shrink-0 w-17rem surface-ground border-right-1 surface-border">
-    <app-chat-history class="flex-1 min-h-0" />
-  </aside>
+<mat-sidenav-container class="h-full">
+  <!-- Historial (mobile) -->
+  <mat-sidenav mode="over" class="app-drawer w-20rem" [(opened)]="historyVisible">
+    <div class="flex flex-column h-full">
+      <app-drawer-header (closed)="historyVisible.set(false)">
+        <span class="font-semibold text-lg">Historial</span>
+      </app-drawer-header>
+      <app-chat-history class="flex-1 min-h-0" />
+    </div>
+  </mat-sidenav>
 
-  <section class="flex-1 min-w-0 surface-card">
-    <router-outlet />
-  </section>
-</div>
+  <mat-sidenav-content class="flex">
+    <!-- Historial (desktop) -->
+    <aside class="hidden lg:flex flex-column flex-shrink-0 w-17rem surface-ground border-right-1 surface-border">
+      <app-chat-history class="flex-1 min-h-0" />
+    </aside>
 
-<!-- Historial (mobile) -->
-<p-drawer [(visible)]="historyVisible" styleClass="app-drawer w-20rem">
-  <ng-template pTemplate="header">
-    <span class="font-semibold text-lg">Historial</span>
-  </ng-template>
-  <app-chat-history class="h-full" />
-</p-drawer>
+    <section class="flex-1 min-w-0 surface-card">
+      <router-outlet />
+    </section>
+  </mat-sidenav-content>
+</mat-sidenav-container>

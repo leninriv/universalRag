@@ -1,22 +1,35 @@
 <div class="flex flex-column gap-3 p-3">
-  <a pButton routerLink="/agent" label="Nuevo chat" icon="pi pi-pen-to-square" class="p-button-outlined w-full no-underline"></a>
+  <a matButton="outlined" routerLink="/agent" class="w-full">
+    <mat-icon>edit_square</mat-icon>
+    Nuevo chat
+  </a>
 
-  <p-iconfield iconPosition="left" styleClass="w-full">
-    <p-inputicon styleClass="pi pi-search" />
-    <input
-      pInputText
-      type="search"
-      class="w-full"
-      placeholder="Buscar chats"
-      aria-label="Buscar chats"
-      [(ngModel)]="search"
-    />
-  </p-iconfield>
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="app-dense w-full">
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput type="search" placeholder="Buscar chats" aria-label="Buscar chats" [(ngModel)]="search" />
+  </mat-form-field>
 </div>
 
 <nav class="flex-1 min-h-0 overflow-y-auto px-2 pb-3" aria-label="Historial de chats">
-  @if (menuItems().length) {
-    <p-menu [model]="menuItems()" styleClass="app-nav-menu" />
+  @if (groups().length) {
+    <mat-nav-list class="app-nav-list">
+      @for (group of groups(); track group.label) {
+        <h3 matSubheader>{{ group.label }}</h3>
+        @for (chat of group.chats; track chat.id) {
+          <a
+            mat-list-item
+            [routerLink]="['/agent', chat.id]"
+            routerLinkActive
+            #rla="routerLinkActive"
+            [activated]="rla.isActive"
+            [attr.aria-current]="rla.isActive ? 'page' : null"
+            [title]="chat.title"
+          >
+            <span matListItemTitle>{{ chat.title }}</span>
+          </a>
+        }
+      }
+    </mat-nav-list>
   } @else {
     <p class="m-0 mt-4 text-sm text-center text-color-secondary">
       {{ search() ? 'No se encontraron chats' : 'Aún no tienes chats' }}
