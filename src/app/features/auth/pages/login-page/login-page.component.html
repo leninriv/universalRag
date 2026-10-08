@@ -3,57 +3,60 @@
     <app-theme-toggle />
   </div>
 
-  <p-card styleClass="w-full" [style]="{ 'max-width': '24rem' }">
-    <div class="flex flex-column align-items-center gap-1 mb-4 text-center">
-      <app-brand />
-      <p class="m-0 mt-2 text-color-secondary">Inicia sesión para continuar</p>
-    </div>
+  <mat-card appearance="outlined" class="w-full p-3" style="max-width: 24rem">
+    <mat-card-content>
+      <div class="flex flex-column align-items-center gap-1 mb-4 text-center">
+        <app-brand />
+        <p class="m-0 mt-2 text-color-secondary">Inicia sesión para continuar</p>
+      </div>
 
-    <form class="flex flex-column gap-3" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      @if (error(); as message) {
-        <p-message severity="error" icon="pi pi-exclamation-circle" role="alert">{{ message }}</p-message>
+      <form class="flex flex-column gap-2" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        @if (error(); as message) {
+          <div class="app-callout app-callout-error mb-2" role="alert">
+            <mat-icon>error</mat-icon>
+            <span>{{ message }}</span>
+          </div>
+        }
+
+        <mat-form-field appearance="outline">
+          <mat-label>Correo electrónico</mat-label>
+          <input matInput type="email" formControlName="email" autocomplete="username" placeholder="nombre@empresa.com" />
+          <mat-error>Ingresa un correo válido.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Contraseña</mat-label>
+          <input
+            matInput
+            [type]="passwordVisible() ? 'text' : 'password'"
+            formControlName="password"
+            autocomplete="current-password"
+          />
+          <button
+            matIconButton
+            matSuffix
+            type="button"
+            [attr.aria-label]="passwordVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            [attr.aria-pressed]="passwordVisible()"
+            (click)="passwordVisible.update((visible) => !visible)"
+          >
+            <mat-icon>{{ passwordVisible() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          <mat-error>Ingresa tu contraseña.</mat-error>
+        </mat-form-field>
+
+        <button matButton="filled" type="submit" class="w-full" [showProgress]="loading()" [disabled]="loading()">
+          <mat-progress-spinner progressIndicator mode="indeterminate" diameter="20" />
+          Iniciar sesión
+        </button>
+      </form>
+
+      @if (mockCredentials; as demo) {
+        <div class="app-callout mt-3 text-sm">
+          <mat-icon>info</mat-icon>
+          <span>Modo demo: <b>{{ demo.email }}</b> / <b>{{ demo.password }}</b></span>
+        </div>
       }
-
-      <div class="flex flex-column gap-2">
-        <label for="login-email" class="font-medium">Correo electrónico</label>
-        <input
-          pInputText
-          id="login-email"
-          type="email"
-          formControlName="email"
-          autocomplete="username"
-          placeholder="nombre@empresa.com"
-          class="w-full"
-          [attr.aria-invalid]="form.controls.email.touched && form.controls.email.invalid"
-        />
-        @if (form.controls.email.touched && form.controls.email.invalid) {
-          <p-message severity="error" variant="simple" size="small">Ingresa un correo válido.</p-message>
-        }
-      </div>
-
-      <div class="flex flex-column gap-2">
-        <label for="login-password" class="font-medium">Contraseña</label>
-        <p-password
-          inputId="login-password"
-          formControlName="password"
-          autocomplete="current-password"
-          [feedback]="false"
-          [toggleMask]="true"
-          styleClass="w-full"
-          inputStyleClass="w-full"
-        />
-        @if (form.controls.password.touched && form.controls.password.invalid) {
-          <p-message severity="error" variant="simple" size="small">Ingresa tu contraseña.</p-message>
-        }
-      </div>
-
-      <p-button type="submit" label="Iniciar sesión" styleClass="w-full" [loading]="loading()" />
-    </form>
-
-    @if (mockCredentials; as demo) {
-      <p-message severity="info" icon="pi pi-info-circle" styleClass="mt-3 w-full">
-        <span class="text-sm">Modo demo: <b>{{ demo.email }}</b> / <b>{{ demo.password }}</b></span>
-      </p-message>
-    }
-  </p-card>
+    </mat-card-content>
+  </mat-card>
 </div>

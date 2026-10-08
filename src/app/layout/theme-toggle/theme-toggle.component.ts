@@ -1,24 +1,18 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
-import { TooltipModule } from 'primeng/tooltip';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ThemeService } from '../../core/services/theme.service';
 
 /** Botón para alternar entre tema claro y oscuro. */
 @Component({
     selector: 'app-theme-toggle',
-    imports: [ButtonModule, TooltipModule],
+    imports: [MatButtonModule, MatIconModule, MatTooltipModule],
     template: `
-    <p-button
-      [icon]="theme.isDark() ? 'pi pi-sun' : 'pi pi-moon'"
-      [text]="true"
-      [rounded]="true"
-      severity="secondary"
-      [ariaLabel]="label()"
-      [pTooltip]="label()"
-      tooltipPosition="bottom"
-      (onClick)="theme.toggle()"
-    />
+    <button matIconButton type="button" [attr.aria-label]="label()" [matTooltip]="label()" (click)="theme.toggle()">
+      <mat-icon>{{ theme.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+    </button>
   `,
     changeDetection: ChangeDetectionStrategy.OnPush
 })

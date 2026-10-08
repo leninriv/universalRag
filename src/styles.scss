@@ -1,30 +1,55 @@
 /*
  * Estilos globales.
- * El tema (Lara) lo provee providePrimeNG en app.config.ts. PrimeIcons y PrimeFlex se cargan en angular.json.
- * Aquí solo van tokens y variantes globales reutilizables de componentes PrimeNG.
+ * Tema de Angular Material (M3) y variantes globales reutilizables. PrimeFlex (solo utilidades de layout) se carga en angular.json.
  */
+@use '@angular/material' as mat;
+
+/*
+ * Tema Material 3. Los tokens `--mat-sys-*` usan `light-dark()`, así que claro/oscuro lo decide `color-scheme`,
+ * que ThemeService pone en <html> (junto con la clase `app-dark`).
+ */
+html {
+  color-scheme: light;
+
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$violet-palette,
+        tertiary: mat.$azure-palette,
+      ),
+      typography: (
+        plain-family: var(--font-family),
+        brand-family: var(--font-family),
+      ),
+      density: 0,
+    )
+  );
+}
+
+html.app-dark {
+  color-scheme: dark;
+}
 
 :root {
-  /* Variables que usan PrimeFlex y el SCSS propio, mapeadas a los tokens del tema de PrimeNG (--p-*). */
-  --surface-ground: var(--p-surface-50);
-  --surface-section: var(--p-surface-0);
-  --surface-card: var(--p-surface-0);
-  --surface-border: var(--p-surface-200);
-  --text-color: var(--p-text-color);
-  --text-color-secondary: var(--p-text-muted-color);
-  --primary-color: var(--p-primary-color);
-  --primary-color-text: var(--p-primary-contrast-color);
-  --highlight-bg: var(--p-highlight-background);
-  --highlight-text-color: var(--p-highlight-color);
-  --border-radius: var(--p-border-radius-md);
+  /* Variables que usan PrimeFlex (`surface-*`, `text-color*`, `bg-primary`, `text-primary`…) mapeadas a los tokens de Material. */
+  --surface-ground: var(--mat-sys-surface-container-low);
+  --surface-section: var(--mat-sys-surface);
+  --surface-card: var(--mat-sys-surface);
+  --surface-border: var(--mat-sys-outline-variant);
+  --text-color: var(--mat-sys-on-surface);
+  --text-color-secondary: var(--mat-sys-on-surface-variant);
+  --primary-color: var(--mat-sys-primary);
+  --primary-color-text: var(--mat-sys-on-primary);
+  --highlight-bg: var(--mat-sys-secondary-container);
+  --highlight-text-color: var(--mat-sys-on-secondary-container);
+  --border-radius: var(--mat-sys-corner-medium);
   --font-family: 'Inter', 'Inter var', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
-.app-dark {
-  --surface-ground: var(--p-surface-950);
-  --surface-section: var(--p-surface-900);
-  --surface-card: var(--p-surface-900);
-  --surface-border: var(--p-surface-700);
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html,
@@ -47,84 +72,111 @@ body {
   margin-inline: auto;
 }
 
-/* Avatar con el color de acento del tema (funciona en claro y oscuro). Uso: <p-avatar styleClass="app-avatar-accent" /> */
-.p-avatar.app-avatar-accent {
-  background: var(--highlight-bg);
-  color: var(--primary-color);
+/* Variante de mat-sidenav usada como drawer de navegación. Uso: <mat-sidenav class="app-drawer w-16rem"> */
+.mat-drawer.app-drawer {
+  border-radius: 0;
 }
 
-/* Variante de p-sidebar usada como drawer de navegación: sin padding en el contenido. */
-.app-drawer.p-drawer .p-drawer-content {
-  padding: 0;
+/* Campos más compactos (buscadores, barras laterales). Uso: <mat-form-field class="app-dense"> */
+.app-dense {
+  @include mat.theme((density: -4));
 }
 
 /*
- * Variante de p-menu para navegación lateral (menú principal e historial de chats).
- * Uso: <p-menu [model]="items" styleClass="app-nav-menu" />
- * Los items con `routerLink` se resaltan automáticamente cuando la ruta está activa.
+ * Variante de mat-nav-list para navegación lateral (menú de módulos e historial de chats).
+ * El item activo se marca con [activated] (routerLinkActive). Con `app-nav-list-collapsed` solo muestra íconos.
  */
-.app-nav-menu.p-menu {
-  width: 100%;
+.mat-mdc-nav-list.app-nav-list {
   padding: 0;
-  border: 0 none;
-  background: transparent;
 
-  .p-menu-submenu-label {
+  .mat-mdc-subheader {
+    height: auto;
     padding: 1rem 0.75rem 0.375rem;
-    background: transparent;
-    color: var(--text-color-secondary);
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    color: var(--text-color-secondary);
   }
 
-  .p-menu-item {
+  .mat-mdc-list-item {
     margin-bottom: 2px;
-  }
-
-  .p-menu-item > .p-menu-item-content {
     border-radius: var(--border-radius);
   }
 
-  .p-menu-item > .p-menu-item-content .p-menu-item-link {
-    min-width: 0;
-    padding: 0.625rem 0.75rem;
-    border-radius: var(--border-radius);
+  .mat-mdc-list-item.mdc-list-item--activated .mdc-list-item__primary-text {
+    font-weight: 600;
   }
 
-  .p-menu-item-label {
-    overflow: hidden;
-    line-height: 1.25;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-
-  .p-menu-item > .p-menu-item-content .p-menu-item-link.p-menu-item-link-active,
-  .p-menu-item:not(.p-highlight):not(.p-disabled) > .p-menu-item-content:hover .p-menu-item-link.p-menu-item-link-active {
-    background: var(--highlight-bg);
-
-    .p-menu-item-label,
-    .p-menu-item-icon {
-      color: var(--highlight-text-color);
-      font-weight: 600;
-    }
-  }
-
-  /* Menú lateral colapsado: solo íconos centrados (el nombre se muestra como tooltip). */
-  &.app-nav-menu-collapsed {
-    .p-menu-submenu-label,
-    .p-menu-item-label {
+  &.app-nav-list-collapsed {
+    .mat-mdc-subheader,
+    .mdc-list-item__content {
       display: none;
     }
 
-    .p-menu-item > .p-menu-item-content .p-menu-item-link {
-      justify-content: center;
+    .mat-mdc-list-item {
       padding-inline: 0;
-
-      .p-menu-item-icon {
-        margin-right: 0;
-      }
+      justify-content: center;
     }
+
+    .mdc-list-item__start {
+      margin: 0;
+    }
+  }
+}
+
+/* Botón de varias líneas con contenido alineado a la izquierda (p. ej. tarjetas de sugerencias). Uso: <button matButton="outlined" class="app-button-multiline"> */
+.mat-mdc-button-base.app-button-multiline {
+  height: auto;
+  padding: 1rem;
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+  border-radius: var(--border-radius);
+
+  .mdc-button__label {
+    width: 100%;
+  }
+}
+
+/* Icon button relleno con el color primario (p. ej. "Enviar"). Uso: <button matIconButton class="app-icon-button-filled"> */
+.mat-mdc-icon-button.app-icon-button-filled {
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+
+  &:disabled {
+    background: color-mix(in srgb, var(--mat-sys-on-surface) 12%, transparent);
+    color: color-mix(in srgb, var(--mat-sys-on-surface) 38%, transparent);
+  }
+}
+
+/* Aviso en línea (Material no tiene componente de mensaje). Uso: <div class="app-callout app-callout-error" role="alert"> */
+.app-callout {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius);
+  font: var(--mat-sys-body-medium);
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+
+  &.app-callout-error {
+    background: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+  }
+}
+
+/* Línea de carga tipo skeleton (Material no tiene skeleton). Uso: <div class="app-skeleton" style="width: 75%"> */
+.app-skeleton {
+  height: 1rem;
+  border-radius: var(--mat-sys-corner-extra-small);
+  background: var(--mat-sys-surface-container-highest);
+  animation: app-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes app-skeleton-pulse {
+  50% {
+    opacity: 0.5;
   }
 }

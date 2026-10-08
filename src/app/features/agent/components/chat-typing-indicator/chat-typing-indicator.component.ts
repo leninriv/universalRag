@@ -1,18 +1,18 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { AvatarModule } from 'primeng/avatar';
-import { SkeletonModule } from 'primeng/skeleton';
+
+import { AvatarComponent } from '../../../../shared/components/avatar/avatar.component';
 
 /** Placeholder mientras el agente genera la respuesta. */
 @Component({
     selector: 'app-chat-typing-indicator',
-    imports: [AvatarModule, SkeletonModule],
+    imports: [AvatarComponent],
     template: `
     <div class="flex gap-3" role="status" aria-label="El agente está escribiendo">
-      <p-avatar icon="pi pi-sparkles" shape="circle" styleClass="app-avatar-accent flex-shrink-0" />
+      <app-avatar icon="auto_awesome" variant="accent" />
       <div class="flex flex-column flex-1 gap-2 pt-2">
-        <p-skeleton width="90%" />
-        <p-skeleton width="75%" />
-        <p-skeleton width="40%" />
+        <div class="app-skeleton" style="width: 90%"></div>
+        <div class="app-skeleton" style="width: 75%"></div>
+        <div class="app-skeleton" style="width: 40%"></div>
       </div>
     </div>
   `,

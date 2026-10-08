@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { DrawerModule } from 'primeng/drawer';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSidenavModule } from '@angular/material/sidenav';
 import { filter, map } from 'rxjs';
 
+import { DrawerHeaderComponent } from '../../../../shared/components/drawer-header/drawer-header.component';
 import { TopbarContentDirective } from '../../../../layout/topbar/topbar-content.directive';
 import { ChatHistoryComponent } from '../../components/chat-history/chat-history.component';
 import { ChatService } from '../../services/chat.service';
@@ -12,7 +14,7 @@ import { ChatService } from '../../services/chat.service';
 /** Página del módulo Agent: historial de chats + conversación activa (ruta hija). */
 @Component({
     selector: 'app-agent-page',
-    imports: [RouterOutlet, ButtonModule, DrawerModule, TopbarContentDirective, ChatHistoryComponent],
+    imports: [RouterOutlet, MatButtonModule, MatIconModule, MatSidenavModule, DrawerHeaderComponent, TopbarContentDirective, ChatHistoryComponent],
     templateUrl: './agent-page.component.html',
     host: { class: 'block h-full' },
     changeDetection: ChangeDetectionStrategy.OnPush

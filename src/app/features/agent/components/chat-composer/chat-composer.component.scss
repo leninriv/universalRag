@@ -6,6 +6,12 @@
   }
 }
 
+/* matInput sin mat-form-field: textarea sin bordes dentro de la caja del composer. */
 .composer-input {
   resize: none;
+  border: 0 none;
+  outline: 0 none;
+  background: transparent;
+  color: var(--text-color);
+  font: var(--mat-sys-body-large);
 }

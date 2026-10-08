@@ -5,7 +5,7 @@ import { ComingSoonComponent } from '../../../../shared/components/coming-soon/c
 @Component({
     selector: 'app-file-manager-page',
     imports: [ComingSoonComponent],
-    template: `<app-coming-soon moduleName="FileManager" icon="pi pi-folder-open" />`,
+    template: `<app-coming-soon moduleName="FileManager" icon="folder_open" />`,
     host: { class: 'block h-full' },
     changeDetection: ChangeDetectionStrategy.OnPush
 })

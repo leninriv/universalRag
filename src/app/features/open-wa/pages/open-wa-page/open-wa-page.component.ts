@@ -5,7 +5,7 @@ import { ComingSoonComponent } from '../../../../shared/components/coming-soon/c
 @Component({
     selector: 'app-open-wa-page',
     imports: [ComingSoonComponent],
-    template: `<app-coming-soon moduleName="OpenWa" icon="pi pi-whatsapp" />`,
+    template: `<app-coming-soon moduleName="OpenWa" icon="chat" />`,
     host: { class: 'block h-full' },
     changeDetection: ChangeDetectionStrategy.OnPush
 })

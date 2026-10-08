@@ -1,0 +1,39 @@
+:host {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  font-weight: 600;
+  user-select: none;
+}
+
+:host(.app-avatar-small) {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.875rem;
+}
+
+:host(.app-avatar-xlarge) {
+  width: 4rem;
+  height: 4rem;
+  font-size: 1.5rem;
+
+  mat-icon {
+    width: 2rem;
+    height: 2rem;
+    font-size: 2rem;
+  }
+}
+
+:host(.app-avatar-primary) {
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+}
+
+:host(.app-avatar-accent) {
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
