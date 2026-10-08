@@ -36,11 +36,10 @@ Aplicación Angular 22 (standalone) con **Angular Material 22** (Material 3) com
 | `<ng-template appTopbarContent>` | `layout/topbar/topbar-content.directive.ts` | Proyecta el título/acciones de una página en la barra superior. Úsalo en vez de crear otra barra de encabezado por página. |
 | `<app-theme-toggle>` | `layout/theme-toggle` | Botón para alternar tema claro/oscuro. |
 | `<app-user-menu>` | `layout/user-menu` | Avatar del usuario en sesión con menú desplegable (incluye "Cerrar sesión"). |
-| `AuthService` | `core/services/auth.service.ts` | Sesión (`user()`, `isAuthenticated()`, `getToken()`, `login()`, `logout()`); se recuerda en `localStorage` hasta que expira el token. |
+| `AuthService` | `core/services/auth.service.ts` | Login real contra InsForge (`POST /api/auth/sessions`). Sesión (`user()`, `isAuthenticated()`, `getToken()`, `login()`, `logout()`); se recuerda en `localStorage` hasta que expira el token. |
 | `authGuard` / `guestGuard` | `core/guards/auth.guard.ts` | `authGuard` protege rutas privadas (redirige a `/login?returnUrl=…`); `guestGuard` saca de `/login` a quien ya tiene sesión. |
 | `authTokenInterceptor` | `core/interceptors/auth-token.interceptor.ts` | Envía `Authorization: Bearer <token>` en las peticiones a `API_CONFIG.baseUrl` (menos el login). |
-| `sessionInterceptor` | `core/interceptors/session.interceptor.ts` | Recibe el token de la respuesta del login y lo guarda; ante un 401 cierra sesión y lleva al login. |
-| `authMockInterceptor` | `core/mocks/auth-mock.interceptor.ts` | Backend falso de `POST /auth/login` (credenciales en `MOCK_CREDENTIALS`). Se activa con `API_CONFIG.useMocks` en `core/config/api.config.ts`. |
+| `sessionInterceptor` | `core/interceptors/session.interceptor.ts` | Recibe el accessToken de la respuesta del login y lo guarda (vence según el `exp` del JWT); ante un 401 cierra sesión y lleva al login. |
 | `ThemeService` | `core/services/theme.service.ts` | Tema actual (`mode`, `isDark`, `toggle()`); se recuerda en `localStorage`. |
 | `LayoutService` | `layout/layout.service.ts` | Menú lateral colapsado (desktop), drawer abierto (mobile) y contenido de la barra superior. |
 | `<app-avatar>` | `shared/components/avatar` | Círculo con ícono o iniciales (`icon`, `label`, `size` = `small`/`normal`/`xlarge`, `variant` = `primary`/`accent`). |
@@ -87,7 +86,7 @@ El backend es [InsForge](https://insforge.dev), proyecto **universalRag** (`proj
 
 - Para tareas de backend usa la CLI (`npx insforge …`, instalada como devDependency) y las skills de InsForge (`insforge-cli`, `insforge`, `insforge-debug`, `insforge-integrations`) en lugar de adivinar la API.
 - Credenciales: la CLI lee `.insforge/project.json` (ignorado por git). Nunca copies keys al código ni las subas al repositorio.
-- **Todavía no se conecta el frontend con el backend.** No agregues `@insforge/sdk`, `.env.local` ni llamadas al backend en `src/` hasta que se pida explícitamente.
+- El frontend solo está conectado al backend en el **login** (HTTP directo). No agregues `@insforge/sdk`, `.env.local` ni otras llamadas al backend en `src/` hasta que se pida explícitamente.
 
 ### RAG
 
@@ -127,5 +126,5 @@ Endpoints (todos con `Authorization: Bearer <token del usuario>`):
 ## Estado actual
 
 - Solo UI: `features/agent/services/chat.service.ts` guarda los chats en memoria y simula las respuestas del agente. Al conectar el backend, reemplazar la lógica de ese servicio manteniendo su API pública.
-- Login con **mock**: no hay API de autenticación todavía, `authMockInterceptor` responde `POST /api/auth/login`. Al existir el endpoint real: poner `API_CONFIG.useMocks = false` (y ajustar `baseUrl`) y borrar `core/mocks/`; guards, interceptores y `AuthService` no cambian. La respuesta esperada es `LoginResponse` (`core/models/auth.model.ts`).
+- Login **real** con InsForge vía HTTP (`AuthService` → `POST /api/auth/sessions`, sin `@insforge/sdk`); `API_CONFIG.baseUrl` es la URL del proyecto. No hay refresh token: al vencer el access token (`exp` del JWT) se vuelve al login. El proyecto exige verificar el correo (`require_email_verification`). El resto del frontend (chats, ask) sigue sin conectarse.
 - Las opciones "Perfil" y "Configuración" del menú de usuario aún no tienen acción.

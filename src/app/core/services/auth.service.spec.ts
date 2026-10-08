@@ -1,71 +1,96 @@
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
+import { API_CONFIG } from '../config/api.config';
 import { authGuard } from '../guards/auth.guard';
 import { authTokenInterceptor } from '../interceptors/auth-token.interceptor';
 import { sessionInterceptor } from '../interceptors/session.interceptor';
-import { MOCK_CREDENTIALS, authMockInterceptor } from '../mocks/auth-mock.interceptor';
-import { AuthService } from './auth.service';
+import { AuthService, LOGIN_URL } from './auth.service';
 
-describe('Autenticación (mock)', () => {
+const CREDENTIALS = { email: 'ana@example.com', password: 'secreto1' };
+
+/** JWT de prueba que vence dentro de una hora. */
+function fakeToken(): string {
+  const exp = Math.floor(Date.now() / 1000) + 3600;
+  return `h.${btoa(JSON.stringify({ exp }))}.s`;
+}
+
+const LOGIN_RESPONSE = {
+  accessToken: fakeToken(),
+  user: { id: 'u1', email: CREDENTIALS.email, emailVerified: true, profile: { name: 'Ana' } },
+};
+
+describe('Autenticación (InsForge)', () => {
   let auth: AuthService;
-  let captured: { authorization: string | null } | undefined;
+  let http: HttpTestingController;
 
   beforeEach(() => {
     localStorage.clear();
-    captured = undefined;
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        provideHttpClient(
-          withInterceptors([
-            authTokenInterceptor,
-            sessionInterceptor,
-            // Espía lo que llega a la "red" justo antes del mock.
-            (req, next) => {
-              captured = { authorization: req.headers.get('Authorization') };
-              return next(req);
-            },
-            authMockInterceptor,
-          ]),
-        ),
+        provideHttpClient(withInterceptors([authTokenInterceptor, sessionInterceptor])),
+        provideHttpClientTesting(),
       ],
     });
     auth = TestBed.inject(AuthService);
+    http = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => localStorage.clear());
+  afterEach(() => {
+    http.verify();
+    localStorage.clear();
+  });
 
-  it('rechaza credenciales incorrectas sin crear sesión', fakeAsync(() => {
+  it('rechaza credenciales incorrectas sin crear sesión', () => {
     let status: number | undefined;
-    auth.login({ email: MOCK_CREDENTIALS.email, password: 'x' }).subscribe({ error: (e) => (status = e.status) });
-    tick(1000);
+    auth.login(CREDENTIALS).subscribe({ error: (e) => (status = e.status) });
+    http.expectOne(LOGIN_URL).flush({ message: 'Invalid credentials' }, { status: 401, statusText: 'Unauthorized' });
+
     expect(status).toBe(401);
     expect(auth.isAuthenticated()).toBeFalse();
-  }));
+  });
 
-  it('guarda el token del login y lo envía en las peticiones siguientes', fakeAsync(() => {
-    auth.login(MOCK_CREDENTIALS).subscribe();
-    tick(1000);
+  it('envía método y credenciales a /api/auth/sessions y guarda la sesión', () => {
+    auth.login(CREDENTIALS).subscribe();
+    const req = http.expectOne(`${API_CONFIG.baseUrl}/api/auth/sessions`);
+    expect(req.request.body).toEqual({ method: 'password', ...CREDENTIALS });
+    expect(req.request.headers.has('Authorization')).toBeFalse();
+    req.flush(LOGIN_RESPONSE);
 
     expect(auth.isAuthenticated()).toBeTrue();
-    expect(auth.user()?.email).toBe(MOCK_CREDENTIALS.email);
-    expect(captured?.authorization).toBeNull(); // el login no lleva token
+    expect(auth.user()).toEqual({ id: 'u1', email: CREDENTIALS.email, name: 'Ana' });
+  });
 
-    TestBed.inject(HttpClient).get('/api/ping').subscribe({ error: () => undefined });
-    tick(1000);
-    expect(captured?.authorization).toBe(`Bearer ${auth.getToken()}`);
-  }));
+  it('envía el token en las peticiones siguientes a la API', () => {
+    auth.login(CREDENTIALS).subscribe();
+    http.expectOne(LOGIN_URL).flush(LOGIN_RESPONSE);
+
+    TestBed.inject(HttpClient).get(`${API_CONFIG.baseUrl}/functions/ask`).subscribe();
+    const req = http.expectOne(`${API_CONFIG.baseUrl}/functions/ask`);
+    expect(req.request.headers.get('Authorization')).toBe(`Bearer ${LOGIN_RESPONSE.accessToken}`);
+    req.flush({});
+  });
+
+  it('cierra la sesión ante un 401 en otra petición de la API', () => {
+    auth.login(CREDENTIALS).subscribe();
+    http.expectOne(LOGIN_URL).flush(LOGIN_RESPONSE);
+
+    TestBed.inject(HttpClient).get(`${API_CONFIG.baseUrl}/functions/ask`).subscribe({ error: () => undefined });
+    http.expectOne(`${API_CONFIG.baseUrl}/functions/ask`).flush({}, { status: 401, statusText: 'Unauthorized' });
+    expect(auth.isAuthenticated()).toBeFalse();
+  });
 
   it('authGuard redirige a /login con returnUrl si no hay sesión', () => {
     const result = TestBed.runInInjectionContext(() => authGuard({} as never, { url: '/agent/1' } as never));
     expect(TestBed.inject(Router).serializeUrl(result as never)).toBe('/login?returnUrl=%2Fagent%2F1');
   });
 
-  it('authGuard deja pasar con sesión iniciada', fakeAsync(() => {
-    auth.login(MOCK_CREDENTIALS).subscribe();
-    tick(1000);
+  it('authGuard deja pasar con sesión iniciada', () => {
+    auth.login(CREDENTIALS).subscribe();
+    http.expectOne(LOGIN_URL).flush(LOGIN_RESPONSE);
     expect(TestBed.runInInjectionContext(() => authGuard({} as never, { url: '/' } as never))).toBeTrue();
-  }));
+  });
 });

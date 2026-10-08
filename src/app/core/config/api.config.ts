@@ -1,9 +1,7 @@
 /**
- * Configuración de la API.
- * Mientras no exista backend de autenticación, `useMocks` activa `authMockInterceptor`
- * (ver core/mocks); ponerlo en `false` cuando exista el endpoint real.
+ * Configuración de la API (backend InsForge, proyecto universalRag).
+ * La URL es pública; las keys del proyecto nunca van en el frontend.
  */
 export const API_CONFIG = {
-  baseUrl: '/api',
-  useMocks: true,
+  baseUrl: 'https://fkk6yt6n.us-east.insforge.app',
 } as const;
