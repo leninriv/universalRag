@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input, model, signal, untracked, viewChild } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, model, signal, untracked, viewChild } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -6,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { map } from 'rxjs';
 
 import { Recipient } from '../../models/broadcast.model';
 
@@ -31,6 +34,13 @@ export class RecipientTableComponent {
   protected readonly search = signal('');
   protected readonly dataSource = new MatTableDataSource<Recipient>([]);
   private readonly paginator = viewChild(MatPaginator);
+
+  protected readonly compact = toSignal(
+    inject(BreakpointObserver)
+      .observe('(max-width: 767.98px)')
+      .pipe(map((state) => state.matches)),
+    { initialValue: false },
+  );
 
   /** Ids de columna estables aunque las cabeceras tengan espacios o símbolos. */
   protected readonly extraColumns = computed(() => this.columns().map((name, index) => ({ id: `col${index}`, name })));

@@ -128,6 +128,15 @@ export class OpenWaPageComponent {
     const ids = this.selectedIds();
     return this.recipientList().recipients.filter((recipient) => ids.has(recipient.id));
   });
+  /** "Se omitieron 2 filas sin teléfono y 1 teléfono repetido." (vacío si no se omitió nada). */
+  protected readonly omittedSummary = computed(() => {
+    const { emptyCount, duplicateCount } = this.recipientList();
+    const parts = [
+      emptyCount ? `${emptyCount} ${emptyCount === 1 ? 'fila sin teléfono' : 'filas sin teléfono'}` : '',
+      duplicateCount ? `${duplicateCount} ${duplicateCount === 1 ? 'teléfono repetido' : 'teléfonos repetidos'}` : '',
+    ].filter(Boolean);
+    return parts.length ? `Se omitieron ${parts.join(' y ')}.` : '';
+  });
   protected readonly otherColumns = computed(() => this.headers().filter((header) => header !== this.phoneColumn()));
 
   // Paso 4: mensaje

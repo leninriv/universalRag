@@ -100,19 +100,10 @@
           <mat-step label="Destinatarios" [completed]="selectedRecipients().length > 0" [editable]="!sending()">
             <div class="flex flex-column gap-3 pt-3">
               @let list = recipientList();
-              @if (list.emptyCount || list.duplicateCount) {
+              @if (omittedSummary(); as summary) {
                 <div class="app-callout">
                   <mat-icon>info</mat-icon>
-                  <span>
-                    Se omitieron
-                    @if (list.emptyCount) {
-                      {{ list.emptyCount }} {{ list.emptyCount === 1 ? 'fila sin teléfono' : 'filas sin teléfono' }}
-                    }
-                    @if (list.emptyCount && list.duplicateCount) { y }
-                    @if (list.duplicateCount) {
-                      {{ list.duplicateCount }} {{ list.duplicateCount === 1 ? 'teléfono repetido' : 'teléfonos repetidos' }}
-                    }.
-                  </span>
+                  <span>{{ summary }}</span>
                 </div>
               }
 

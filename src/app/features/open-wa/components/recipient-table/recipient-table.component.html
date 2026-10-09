@@ -56,4 +56,4 @@
   </table>
 </div>
 
-<mat-paginator [pageSizeOptions]="[10, 25, 50, 100]" showFirstLastButtons aria-label="Paginación de destinatarios" />
+<mat-paginator [pageSizeOptions]="[10, 25, 50, 100]" [hidePageSize]="compact()" [showFirstLastButtons]="!compact()" aria-label="Paginación de destinatarios" />

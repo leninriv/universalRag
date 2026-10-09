@@ -11,8 +11,8 @@ import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
-import { DocumentTableComponent } from '../../components/document-table/document-table.component';
 import { FileDropZoneComponent } from '../../../../shared/components/file-drop-zone/file-drop-zone.component';
+import { DocumentTableComponent } from '../../components/document-table/document-table.component';
 import { UploadQueueComponent } from '../../components/upload-queue/upload-queue.component';
 import { StoredDocument } from '../../models/document.model';
 import { DocumentService } from '../../services/document.service';

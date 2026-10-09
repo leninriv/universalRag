@@ -42,11 +42,13 @@ Aplicación Angular 22 (standalone) con **Angular Material 22** (Material 3) com
 | `sessionInterceptor` | `core/interceptors/session.interceptor.ts` | Recibe el token de la respuesta del login y lo guarda; ante un 401 cierra sesión y lleva al login. |
 | `authMockInterceptor` | `core/mocks/auth-mock.interceptor.ts` | Backend falso de `POST /auth/login` (credenciales en `MOCK_CREDENTIALS`). Se activa con `API_CONFIG.useMocks` en `core/config/api.config.ts`. |
 | `documentsMockInterceptor` | `features/file-manager/mocks/documents-mock.interceptor.ts` | Backend falso de `/documents` (listado, subida con progreso, borrado, descarga, reprocesar). También con `API_CONFIG.useMocks`. |
+| `whatsappMockInterceptor` | `features/open-wa/mocks/whatsapp-mock.interceptor.ts` | Backend falso de `POST /whatsapp/messages` (encola mensajes ya personalizados, responde 202). También con `API_CONFIG.useMocks`. |
 | `ThemeService` | `core/services/theme.service.ts` | Tema actual (`mode`, `isDark`, `toggle()`); se recuerda en `localStorage`. |
 | `LOCALE_ID` `es` / `SpanishPaginatorIntl` | `app.config.ts` / `core/i18n/paginator-intl.ts` | Fechas y números (`date`, `formatNumber`) en español y textos de `mat-paginator` en español, para toda la app. |
 | `LayoutService` | `layout/layout.service.ts` | Menú lateral colapsado (desktop), drawer abierto (mobile) y contenido de la barra superior. |
 | `<app-avatar>` | `shared/components/avatar` | Círculo con ícono o iniciales (`icon`, `label`, `size` = `small`/`normal`/`xlarge`, `variant` = `primary`/`accent`). |
 | `<app-drawer-header>` | `shared/components/drawer-header` | Cabecera de un `mat-sidenav` usado como drawer: contenido proyectado + botón cerrar (`closed`). |
+| `<app-file-drop-zone>` | `shared/components/file-drop-zone` | Zona drag & drop + botón "Seleccionar archivos" (`accept`, `hint`, `multiple`; emite `filesSelected`). La usan FileManager y OpenWa. |
 | `ConfirmDialogComponent` | `shared/components/confirm-dialog` | Diálogo de confirmación: `MatDialog.open(ConfirmDialogComponent, { data: { title, message, confirmLabel, destructive } }).afterClosed()` → `true` si se confirma. |
 | `.app-nav-list` | `src/styles.scss` | Variante de `mat-nav-list` para navegación lateral (subheaders, item activo con `[activated]` + `routerLinkActive`); `.app-nav-list-collapsed` = solo íconos. |
 | `.app-drawer` | `src/styles.scss` | Variante de `mat-sidenav` (`mode="over"`) usada como drawer de navegación. |
@@ -63,10 +65,12 @@ Aplicación Angular 22 (standalone) con **Angular Material 22** (Material 3) com
 | `<app-chat-typing-indicator>` | `features/agent/components/chat-typing-indicator` | Placeholder mientras responde el agente. |
 | `<app-chat-history>` | `features/agent/components/chat-history` | Nuevo chat + buscador + historial agrupado por fecha. |
 | `DocumentService` | `features/file-manager/services/document.service.ts` | Documentos (`documents`, `loading`, `loadError`), cola de subidas con progreso (`uploads`, `upload()`, `cancelUpload()`), `remove()`, `reprocess()`, `download()`. Refresca el listado mientras haya documentos en `processing`. |
-| `<app-file-drop-zone>` | `features/file-manager/components/file-drop-zone` | Zona drag & drop + botón "Seleccionar archivos" (`accept`, `hint`, `multiple`; emite `filesSelected`). |
 | `<app-upload-queue>` | `features/file-manager/components/upload-queue` | Subidas en curso con `mat-progress-bar` y las que fallaron (`cancelled`, `dismissed`). |
 | `<app-document-table>` | `features/file-manager/components/document-table` | `mat-table` de documentos con buscador, orden, paginación, chip de estado y menú (descargar, reprocesar, eliminar). En mobile solo nombre + acciones. |
 | `fileSize` (pipe) / `file-rules.ts` | `features/file-manager/pipes` / `features/file-manager/utils` | Tamaño legible (`1,2 MB`); tipos y tamaño permitidos (`UPLOAD_RULES`, `validateFile()`, `fileTypeOf()`). |
+| `<app-recipient-table>` | `features/open-wa/components/recipient-table` | Destinatarios con checkbox (`[(selected)]` = Set de ids), "seleccionar todos" sobre lo filtrado, buscador en todas las columnas y paginación. |
+| `<app-message-editor>` | `features/open-wa/components/message-editor` | Mensaje con variables `{{Columna}}`: botones para insertarlas, contador, vista previa con un destinatario y aviso de variables desconocidas. |
+| `spreadsheet.ts` / `recipients.ts` / `limits.ts` | `features/open-wa/utils` | Lectura local de XLSX/XLS/CSV con SheetJS (`readWorkbook()`, `readSheet()`, `guessPhoneColumn()`); destinatarios sin vacíos ni duplicados (`buildRecipients()`), `renderMessage()`, `unknownVariables()`; límites (10 MB, 5.000 filas, 4.096 caracteres). `limits.ts` no importa `xlsx` (lo usa el mock, que va en el bundle inicial). |
 
 ## Arquitectura
 
@@ -79,7 +83,7 @@ src/app/
     auth/            Login (ruta /login, pública)
     agent/           Chat estilo ChatGPT (rutas /agent y /agent/:chatId)
     file-manager/    Carga de documentos + listado de la base de conocimiento (ruta /file-manager)
-    open-wa/         Coming soon
+    open-wa/         Wizard de envío masivo por WhatsApp desde un Excel/CSV (ruta /open-wa)
 ```
 
 - Cada módulo es independiente y se carga con lazy loading desde `app.routes.ts` (`features/<modulo>/<modulo>.routes.ts`). Un módulo no importa nada de otro módulo; lo compartido va a `shared/`.
@@ -139,4 +143,5 @@ Endpoints (todos con `Authorization: Bearer <token del usuario>`):
 - Solo UI: `features/agent/services/chat.service.ts` guarda los chats en memoria y simula las respuestas del agente. Al conectar el backend, reemplazar la lógica de ese servicio manteniendo su API pública.
 - Login con **mock**: no hay API de autenticación todavía, `authMockInterceptor` responde `POST /api/auth/login`. Al existir el endpoint real: poner `API_CONFIG.useMocks = false` (y ajustar `baseUrl`) y borrar `core/mocks/`; guards, interceptores y `AuthService` no cambian. La respuesta esperada es `LoginResponse` (`core/models/auth.model.ts`).
 - FileManager con **mock**: `documentsMockInterceptor` (`features/file-manager/mocks/`, activado por `API_CONFIG.useMocks`) simula `GET/POST /api/documents`, `DELETE /api/documents/:id`, `GET …/:id/download` y `POST …/:id/reprocess` (contrato documentado en ese archivo). Guarda los documentos en memoria (se pierden al recargar) y simula la indexación; un archivo con "error" en el nombre falla la primera vez, para probar "Reprocesar". Al existir la API real: borrar `features/file-manager/mocks/` y quitarlo de `app.config.ts`; `DocumentService` no cambia. Nota: la función `ingest` hoy recibe texto plano, así que la API real tendrá que extraer el texto de PDF/DOCX/XLSX/CSV antes de ingestarlo.
+- OpenWa con **mock**: el Excel/CSV se lee en el navegador con SheetJS (`xlsx`, instalado desde `cdn.sheetjs.com` porque el paquete de npm está desactualizado). Pasos: archivo (con selector de hoja), columna de teléfono (radio, preseleccionada si el nombre lo sugiere), destinatarios y mensaje. El front personaliza cada mensaje y envía `POST /api/whatsapp/messages` `{ messages: [{ phone, text }] }` → 202 `{ jobId, queued }`; lo responde `whatsappMockInterceptor`. Los teléfonos van tal cual vienen en la celda (los números enteros sin formato propio se leen completos, no en notación científica); los duplicados se detectan ignorando espacios, guiones, puntos y paréntesis. Al existir la API real: borrar `features/open-wa/mocks/` y quitarlo de `app.config.ts`.
 - Las opciones "Perfil" y "Configuración" del menú de usuario aún no tienen acción.
