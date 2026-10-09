@@ -1,0 +1,59 @@
+<div class="flex flex-column md:flex-row md:align-items-center md:justify-content-between gap-2 mb-3">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="app-dense w-full md:w-20rem">
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput type="search" placeholder="Buscar en cualquier columna" aria-label="Buscar destinatarios" [(ngModel)]="search" />
+  </mat-form-field>
+  <span class="text-sm text-color-secondary" aria-live="polite">
+    {{ selected().size }} de {{ recipients().length }} seleccionados
+  </span>
+</div>
+
+<div class="overflow-x-auto">
+  <table mat-table class="w-full" [dataSource]="dataSource">
+    <ng-container matColumnDef="select">
+      <th mat-header-cell *matHeaderCellDef class="w-4rem">
+        <mat-checkbox
+          [checked]="allFilteredSelected()"
+          [indeterminate]="someFilteredSelected()"
+          [disabled]="!dataSource.data.length"
+          [attr.aria-label]="search() ? 'Seleccionar todos los resultados' : 'Seleccionar todos'"
+          (change)="toggleAllFiltered()"
+        />
+      </th>
+      <td mat-cell *matCellDef="let recipient">
+        <mat-checkbox
+          [checked]="selected().has(recipient.id)"
+          [attr.aria-label]="'Seleccionar ' + recipient.phone"
+          (change)="toggle(recipient.id)"
+        />
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="phone">
+      <th mat-header-cell *matHeaderCellDef>{{ phoneColumn() }}</th>
+      <td mat-cell *matCellDef="let recipient" class="white-space-nowrap font-medium">{{ recipient.phone }}</td>
+    </ng-container>
+
+    @for (column of extraColumns(); track column.id) {
+      <ng-container [matColumnDef]="column.id">
+        <th mat-header-cell *matHeaderCellDef class="white-space-nowrap">{{ column.name }}</th>
+        <td mat-cell *matCellDef="let recipient">
+          <span class="block max-w-20rem white-space-nowrap overflow-hidden text-overflow-ellipsis" [title]="recipient.data[column.name]">
+            {{ recipient.data[column.name] }}
+          </span>
+        </td>
+      </ng-container>
+    }
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns()"></tr>
+
+    <tr class="mat-mdc-row" *matNoDataRow>
+      <td class="mat-mdc-cell p-5 text-center text-color-secondary" [attr.colspan]="displayedColumns().length">
+        No hay destinatarios que coincidan con la búsqueda
+      </td>
+    </tr>
+  </table>
+</div>
+
+<mat-paginator [pageSizeOptions]="[10, 25, 50, 100]" showFirstLastButtons aria-label="Paginación de destinatarios" />

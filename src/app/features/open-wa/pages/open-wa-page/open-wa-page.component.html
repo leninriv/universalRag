@@ -1,0 +1,179 @@
+<!-- Título de la página en la barra superior global -->
+<ng-template appTopbarContent>
+  <h1 class="m-0 text-lg font-semibold white-space-nowrap overflow-hidden text-overflow-ellipsis">Envío por WhatsApp</h1>
+</ng-template>
+
+<div class="p-3 md:p-4">
+  @if (result(); as sent) {
+    <!-- Resultado -->
+    <mat-card appearance="outlined">
+      <mat-card-content class="flex flex-column align-items-center text-center gap-3 py-5">
+        <app-avatar icon="check" size="xlarge" />
+        <h2 class="m-0 text-2xl font-semibold">
+          {{ sent.queued === 1 ? '1 mensaje en cola' : sent.queued.toLocaleString('es') + ' mensajes en cola' }}
+        </h2>
+        <p class="m-0 text-color-secondary line-height-3 max-w-30rem">
+          El envío por WhatsApp está en proceso. Los mensajes se enviarán en los próximos minutos.
+        </p>
+        <p class="m-0 text-xs text-color-secondary">Referencia: {{ sent.jobId }}</p>
+        <button matButton="filled" type="button" (click)="restart()">
+          <mat-icon>add</mat-icon>
+          Nuevo envío
+        </button>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <mat-card appearance="outlined">
+      <mat-card-content>
+        <mat-stepper linear [orientation]="compact() ? 'vertical' : 'horizontal'" aria-label="Pasos del envío">
+          <!-- Paso 1: archivo -->
+          <mat-step label="Archivo" [completed]="!!sheet()" [editable]="!sending()">
+            <div class="flex flex-column gap-3 pt-3">
+              <app-file-drop-zone [accept]="accept" [hint]="hint" [multiple]="false" (filesSelected)="onFiles($event)" />
+
+              @if (reading()) {
+                <div class="flex align-items-center gap-2 text-color-secondary">
+                  <mat-progress-spinner mode="indeterminate" diameter="20" />
+                  Leyendo el archivo…
+                </div>
+              }
+              @if (fileError() || sheetError(); as error) {
+                <div class="app-callout app-callout-error" role="alert">
+                  <mat-icon>error</mat-icon>
+                  <span>{{ error }}</span>
+                </div>
+              }
+
+              @if (fileName()) {
+                <div class="flex flex-column md:flex-row md:align-items-center gap-3">
+                  <div class="flex align-items-center gap-2 flex-1 min-w-0">
+                    <mat-icon class="text-color-secondary flex-shrink-0">table_chart</mat-icon>
+                    <span class="font-medium white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ fileName() }}</span>
+                    @if (sheet(); as data) {
+                      <span class="text-sm text-color-secondary white-space-nowrap">
+                        · {{ data.rows.length }} {{ data.rows.length === 1 ? 'fila' : 'filas' }}
+                      </span>
+                    }
+                  </div>
+                  @if (sheetNames().length > 1) {
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="app-dense w-full md:w-16rem">
+                      <mat-label>Hoja</mat-label>
+                      <mat-select [(value)]="sheetName">
+                        @for (name of sheetNames(); track name) {
+                          <mat-option [value]="name">{{ name }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                  }
+                </div>
+              }
+
+              <div class="flex justify-content-end">
+                <button matButton="filled" type="button" matStepperNext [disabled]="!sheet()">Siguiente</button>
+              </div>
+            </div>
+          </mat-step>
+
+          <!-- Paso 2: columna de teléfono -->
+          <mat-step label="Columna de teléfono" [completed]="!!phoneColumn()" [editable]="!sending()">
+            <div class="flex flex-column gap-3 pt-3">
+              <p class="m-0 text-color-secondary">¿En qué columna están los números de WhatsApp?</p>
+              <mat-radio-group class="flex flex-column gap-1" aria-label="Columna de teléfono" [(ngModel)]="phoneColumn">
+                @for (header of headers(); track header) {
+                  <mat-radio-button [value]="header">
+                    <span class="font-medium">{{ header }}</span>
+                    @if (columnExamples()[header]; as examples) {
+                      <span class="block text-sm text-color-secondary">{{ examples }}</span>
+                    }
+                  </mat-radio-button>
+                }
+              </mat-radio-group>
+
+              <div class="flex justify-content-between">
+                <button matButton type="button" matStepperPrevious>Atrás</button>
+                <button matButton="filled" type="button" matStepperNext [disabled]="!phoneColumn()">Siguiente</button>
+              </div>
+            </div>
+          </mat-step>
+
+          <!-- Paso 3: destinatarios -->
+          <mat-step label="Destinatarios" [completed]="selectedRecipients().length > 0" [editable]="!sending()">
+            <div class="flex flex-column gap-3 pt-3">
+              @let list = recipientList();
+              @if (list.emptyCount || list.duplicateCount) {
+                <div class="app-callout">
+                  <mat-icon>info</mat-icon>
+                  <span>
+                    Se omitieron
+                    @if (list.emptyCount) {
+                      {{ list.emptyCount }} {{ list.emptyCount === 1 ? 'fila sin teléfono' : 'filas sin teléfono' }}
+                    }
+                    @if (list.emptyCount && list.duplicateCount) { y }
+                    @if (list.duplicateCount) {
+                      {{ list.duplicateCount }} {{ list.duplicateCount === 1 ? 'teléfono repetido' : 'teléfonos repetidos' }}
+                    }.
+                  </span>
+                </div>
+              }
+
+              @if (list.recipients.length) {
+                <app-recipient-table
+                  [recipients]="list.recipients"
+                  [phoneColumn]="phoneColumn() ?? ''"
+                  [columns]="otherColumns()"
+                  [(selected)]="selectedIds"
+                />
+              } @else {
+                <div class="app-callout app-callout-error" role="alert">
+                  <mat-icon>error</mat-icon>
+                  <span>La columna «{{ phoneColumn() }}» no tiene teléfonos. Elige otra columna.</span>
+                </div>
+              }
+
+              <div class="flex justify-content-between">
+                <button matButton type="button" matStepperPrevious>Atrás</button>
+                <button matButton="filled" type="button" matStepperNext [disabled]="!selectedRecipients().length">
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          </mat-step>
+
+          <!-- Paso 4: mensaje y envío -->
+          <mat-step label="Mensaje" [completed]="messageValid()">
+            <div class="flex flex-column gap-3 pt-3">
+              <app-message-editor
+                [variables]="headers()"
+                [sample]="selectedRecipients()[0]"
+                [longestLength]="longestMessage()"
+                [(message)]="message"
+              />
+
+              @if (sendError(); as error) {
+                <div class="app-callout app-callout-error" role="alert">
+                  <mat-icon>error</mat-icon>
+                  <span>{{ error }}</span>
+                </div>
+              }
+
+              <div class="flex justify-content-between align-items-center gap-2">
+                <button matButton type="button" matStepperPrevious [disabled]="sending()">Atrás</button>
+                <button
+                  matButton="filled"
+                  type="button"
+                  [showProgress]="sending()"
+                  [disabled]="!messageValid() || sending()"
+                  (click)="send()"
+                >
+                  <mat-progress-spinner progressIndicator mode="indeterminate" diameter="20" />
+                  <mat-icon>send</mat-icon>
+                  Enviar a {{ selectedRecipients().length }}
+                </button>
+              </div>
+            </div>
+          </mat-step>
+        </mat-stepper>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

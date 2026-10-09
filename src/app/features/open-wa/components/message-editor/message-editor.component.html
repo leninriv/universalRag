@@ -1,0 +1,59 @@
+<div class="grid">
+  <div class="col-12 lg:col-7 flex flex-column gap-2">
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Mensaje</mat-label>
+      <textarea
+        #textarea
+        matInput
+        cdkTextareaAutosize
+        cdkAutosizeMinRows="6"
+        cdkAutosizeMaxRows="16"
+        [placeholder]="placeholder"
+        [maxlength]="maxLength"
+        [(ngModel)]="message"
+      ></textarea>
+      <mat-hint>Usa variables para personalizar el mensaje de cada destinatario.</mat-hint>
+      <mat-hint align="end">{{ message().length }} / {{ maxLength }}</mat-hint>
+    </mat-form-field>
+
+    @if (variables().length) {
+      <div>
+        <p class="m-0 mb-2 text-sm text-color-secondary">Insertar variable:</p>
+        <div class="flex flex-wrap gap-2">
+          @for (variable of variables(); track variable) {
+            <button matButton="outlined" type="button" (click)="insert(variable)">
+              <mat-icon>data_object</mat-icon>
+              {{ variable }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    @if (unknown().length) {
+      <div class="app-callout app-callout-error" role="alert">
+        <mat-icon>error</mat-icon>
+        <span>
+          {{ unknown().length === 1 ? 'Esta variable no es una columna del archivo' : 'Estas variables no son columnas del archivo' }}:
+          <b>{{ unknown().join(', ') }}</b>
+        </span>
+      </div>
+    }
+    @if (longestLength() > maxLength) {
+      <div class="app-callout app-callout-error" role="alert">
+        <mat-icon>error</mat-icon>
+        <span>Con las variables, algún mensaje supera los {{ maxLength }} caracteres ({{ longestLength() }}).</span>
+      </div>
+    }
+  </div>
+
+  <div class="col-12 lg:col-5">
+    <p class="m-0 mb-2 text-sm text-color-secondary">
+      Vista previa{{ sample() ? ' para ' + sample()!.phone : '' }}
+    </p>
+    <div class="app-callout align-items-start">
+      <mat-icon>chat</mat-icon>
+      <p class="preview m-0 flex-1">{{ preview() || 'Escribe un mensaje para ver cómo le llegará a cada destinatario.' }}</p>
+    </div>
+  </div>
+</div>

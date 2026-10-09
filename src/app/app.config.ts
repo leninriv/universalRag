@@ -12,6 +12,7 @@ import { authTokenInterceptor } from './core/interceptors/auth-token.interceptor
 import { sessionInterceptor } from './core/interceptors/session.interceptor';
 import { authMockInterceptor } from './core/mocks/auth-mock.interceptor';
 import { documentsMockInterceptor } from './features/file-manager/mocks/documents-mock.interceptor';
+import { whatsappMockInterceptor } from './features/open-wa/mocks/whatsapp-mock.interceptor';
 import { routes } from './app.routes';
 
 // Fechas y números (DatePipe, formatNumber…) en español.
@@ -26,7 +27,7 @@ export const appConfig: ApplicationConfig = {
       withInterceptors([
         authTokenInterceptor,
         sessionInterceptor,
-        ...(API_CONFIG.useMocks ? [authMockInterceptor, documentsMockInterceptor] : []),
+        ...(API_CONFIG.useMocks ? [authMockInterceptor, documentsMockInterceptor, whatsappMockInterceptor] : []),
       ]),
     ),
     { provide: LOCALE_ID, useValue: 'es' },
