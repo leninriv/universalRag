@@ -9,8 +9,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-import { API_CONFIG } from '../../../../core/config/api.config';
-import { MOCK_CREDENTIALS } from '../../../../core/mocks/auth-mock.interceptor';
 import { AuthService } from '../../../../core/services/auth.service';
 import { BrandComponent } from '../../../../layout/brand/brand.component';
 import { ThemeToggleComponent } from '../../../../layout/theme-toggle/theme-toggle.component';
@@ -47,8 +45,6 @@ export class LoginPageComponent {
   protected readonly passwordVisible = signal(false);
   protected readonly error = signal<string | null>(null);
 
-  protected readonly mockCredentials = API_CONFIG.useMocks ? MOCK_CREDENTIALS : null;
-
   protected submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -81,9 +77,14 @@ function errorMessage(err: unknown): string {
     if (err.status === 0) {
       return 'No se pudo conectar con el servidor. Inténtalo de nuevo.';
     }
-    const message = (err.error as { message?: string } | null)?.message;
-    if (message) {
-      return message;
+    if (err.status === 401) {
+      return 'Correo o contraseña incorrectos.';
+    }
+    if (err.status === 403) {
+      return 'Debes verificar tu correo antes de iniciar sesión.';
+    }
+    if (err.status === 429) {
+      return 'Demasiados intentos. Espera un momento e inténtalo de nuevo.';
     }
   }
   return 'No se pudo iniciar sesión. Inténtalo de nuevo.';

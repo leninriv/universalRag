@@ -1,22 +1,24 @@
 import { HttpClient, HttpErrorResponse, HttpEventType } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { EMPTY, Observable, Subscription, map, switchMap, tap, timer } from 'rxjs';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable, Subscription, from, map, switchMap, tap } from 'rxjs';
 
 import { API_CONFIG } from '../../../core/config/api.config';
 import { StoredDocument, UploadItem } from '../models/document.model';
 import { validateFile } from '../utils/file-rules';
 
-/** Recurso de documentos de la API (ver el contrato en `mocks/documents-mock.interceptor.ts`). */
-export const DOCUMENTS_URL = `${API_CONFIG.baseUrl}/documents`;
+/** Edge function `ingest`: recibe `{ text, source }`, genera los chunks y sus embeddings. */
+export const INGEST_URL = `${API_CONFIG.baseUrl}/functions/ingest`;
+/** Edge function `delete-document`: recibe `{ source }` y borra todos los chunks de ese documento. */
+export const DELETE_DOCUMENT_URL = `${API_CONFIG.baseUrl}/functions/delete-document`;
+/** RPC `list_documents`: un elemento por `source`, los más recientes primero. */
+export const LIST_DOCUMENTS_URL = `${API_CONFIG.baseUrl}/api/database/rpc/list_documents`;
 
-/** Cada cuánto se refresca el listado mientras haya documentos indexándose. */
-const POLL_INTERVAL_MS = 3000;
+interface ListedDocument {
+  source: string;
+  uploaded_at: string;
+}
 
-/**
- * Documentos de la base de conocimiento: listado, cola de subidas y acciones.
- * Mientras algún documento esté en `processing` refresca el listado periódicamente.
- */
+/** Documentos de la base de conocimiento: listado y cola de subidas (ingesta). */
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
   private readonly http = inject(HttpClient);
@@ -30,23 +32,23 @@ export class DocumentService {
   readonly loading = signal(false);
   readonly loadError = signal<string | null>(null);
 
-  private readonly hasProcessing = computed(() => this.documentsState().some((doc) => doc.status === 'processing'));
-
-  constructor() {
-    toObservable(this.hasProcessing)
-      .pipe(
-        switchMap((active) => (active ? timer(POLL_INTERVAL_MS, POLL_INTERVAL_MS) : EMPTY)),
-        takeUntilDestroyed(),
-      )
-      .subscribe(() => this.fetch(false));
-  }
-
   /** Carga el listado mostrando el estado de carga. */
   load(): void {
-    this.fetch(true);
+    this.loading.set(true);
+    this.loadError.set(null);
+    this.http.post<ListedDocument[]>(LIST_DOCUMENTS_URL, {}).subscribe({
+      next: (docs) => {
+        this.documentsState.set(docs.map((doc) => ({ name: doc.source, uploadedAt: doc.uploaded_at })));
+        this.loading.set(false);
+      },
+      error: (error: unknown) => {
+        this.loadError.set(errorMessage(error, 'No se pudieron cargar los documentos.'));
+        this.loading.set(false);
+      },
+    });
   }
 
-  /** Sube los archivos en paralelo. Los inválidos quedan en la cola con su error, sin llamar a la API. */
+  /** Ingesta los archivos en paralelo. Los inválidos quedan en la cola con su error, sin llamar a la API. */
   upload(files: File[]): void {
     for (const file of files) {
       const item: UploadItem = { id: crypto.randomUUID(), file, progress: 0, state: 'uploading', errorMessage: null };
@@ -57,18 +59,19 @@ export class DocumentService {
       }
 
       this.uploadsState.update((items) => [...items, item]);
-      const body = new FormData();
-      body.append('file', file, file.name);
-
-      const subscription = this.http
-        .post<StoredDocument>(DOCUMENTS_URL, body, { reportProgress: true, observe: 'events' })
+      const subscription = from(file.text())
+        .pipe(
+          switchMap((text) =>
+            this.http.post(INGEST_URL, { text, source: file.name }, { reportProgress: true, observe: 'events' }),
+          ),
+        )
         .subscribe({
           next: (event) => {
             if (event.type === HttpEventType.UploadProgress) {
               const progress = event.total ? Math.round((event.loaded / event.total) * 100) : 0;
               this.patchUpload(item.id, { progress });
-            } else if (event.type === HttpEventType.Response && event.body) {
-              this.upsert(event.body);
+            } else if (event.type === HttpEventType.Response) {
+              this.upsert({ name: file.name, uploadedAt: new Date().toISOString() });
               this.removeUpload(item.id);
             }
           },
@@ -91,49 +94,17 @@ export class DocumentService {
     this.removeUpload(id);
   }
 
-  remove(id: string): Observable<void> {
-    return this.http
-      .delete<void>(`${DOCUMENTS_URL}/${id}`)
-      .pipe(tap(() => this.documentsState.update((docs) => docs.filter((doc) => doc.id !== id))));
-  }
-
-  /** Vuelve a indexar un documento (p. ej. si falló). */
-  reprocess(id: string): Observable<StoredDocument> {
-    return this.http.post<StoredDocument>(`${DOCUMENTS_URL}/${id}/reprocess`, null).pipe(tap((doc) => this.upsert(doc)));
-  }
-
-  /** Descarga el archivo original. */
-  download(doc: StoredDocument): Observable<void> {
-    return this.http
-      .get(`${DOCUMENTS_URL}/${doc.id}/download`, { responseType: 'blob' })
-      .pipe(map((blob) => saveBlob(blob, doc.name)));
-  }
-
-  private fetch(showLoading: boolean): void {
-    if (showLoading) {
-      this.loading.set(true);
-      this.loadError.set(null);
-    }
-    this.http.get<StoredDocument[]>(DOCUMENTS_URL).subscribe({
-      next: (docs) => {
-        this.documentsState.set(docs);
-        this.loadError.set(null);
-        this.loading.set(false);
-      },
-      error: (error: unknown) => {
-        this.loadError.set(errorMessage(error, 'No se pudieron cargar los documentos.'));
-        this.loading.set(false);
-      },
-    });
-  }
-
-  /** Reemplaza el documento con el mismo id o, si no existe, lo agrega al inicio. */
-  private upsert(doc: StoredDocument): void {
-    this.documentsState.update((docs) =>
-      docs.some((current) => current.id === doc.id)
-        ? docs.map((current) => (current.id === doc.id ? doc : current))
-        : [doc, ...docs],
+  /** Elimina el documento y todos sus fragmentos de la base de conocimiento. */
+  remove(doc: StoredDocument): Observable<void> {
+    return this.http.post(DELETE_DOCUMENT_URL, { source: doc.name }).pipe(
+      tap(() => this.documentsState.update((docs) => docs.filter((current) => current.name !== doc.name))),
+      map(() => undefined),
     );
+  }
+
+  /** Reemplaza el documento con el mismo nombre (re-ingestar lo reemplaza) o, si no existe, lo agrega al inicio. */
+  private upsert(doc: StoredDocument): void {
+    this.documentsState.update((docs) => [doc, ...docs.filter((current) => current.name !== doc.name)]);
   }
 
   private patchUpload(id: string, changes: Partial<UploadItem>): void {
@@ -148,16 +119,7 @@ export class DocumentService {
 }
 
 function errorMessage(error: unknown, fallback: string): string {
-  const message = error instanceof HttpErrorResponse ? (error.error as { message?: unknown } | null)?.message : null;
+  const body = error instanceof HttpErrorResponse ? (error.error as { error?: unknown; message?: unknown } | null) : null;
+  const message = body?.error ?? body?.message;
   return typeof message === 'string' ? message : fallback;
-}
-
-function saveBlob(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  link.click();
-  // Se libera después de que el navegador tomó la descarga.
-  setTimeout(() => URL.revokeObjectURL(url));
 }

@@ -1,10 +1,10 @@
 /**
- * Configuración de la API.
- * Mientras no exista backend, `useMocks` activa los backends falsos `authMockInterceptor` (core/mocks),
- * `documentsMockInterceptor` (features/file-manager/mocks)
- * y `whatsappMockInterceptor` (features/open-wa/mocks); ponerlo en `false` cuando existan los endpoints reales.
+ * Configuración de la API (backend InsForge, proyecto universalRag).
+ * La URL es pública; las keys del proyecto nunca van en el frontend.
+ * `useMocks` ya solo activa el backend falso del envío por WhatsApp (`whatsappMockInterceptor`,
+ * features/open-wa/mocks); ponerlo en `false` cuando exista ese endpoint real.
  */
 export const API_CONFIG = {
-  baseUrl: '/api',
+  baseUrl: 'https://fkk6yt6n.us-east.insforge.app',
   useMocks: true,
 } as const;

@@ -9,7 +9,7 @@ import { AuthSession, AuthUser, LoginCredentials, LoginResponse } from '../model
 const STORAGE_KEY = 'app-session';
 
 /** Ruta de login; los interceptores la usan para no enviar el token ni cerrar sesión por un 401 de credenciales. */
-export const LOGIN_URL = `${API_CONFIG.baseUrl}/auth/login`;
+export const LOGIN_URL = `${API_CONFIG.baseUrl}/api/auth/sessions`;
 
 /**
  * Sesión del usuario. `login()` solo llama a la API: el token de la respuesta lo captura
@@ -26,15 +26,17 @@ export class AuthService {
   readonly user = computed<AuthUser | null>(() => this.session()?.user ?? null);
 
   login(credentials: LoginCredentials): Observable<AuthUser> {
-    return this.http.post<LoginResponse>(LOGIN_URL, credentials).pipe(map((response) => response.user));
+    return this.http
+      .post<LoginResponse>(LOGIN_URL, { method: 'password', ...credentials })
+      .pipe(map((response) => toAuthUser(response.user)));
   }
 
   /** Guarda la sesión recibida del backend. */
   startSession(response: LoginResponse): void {
     const session: AuthSession = {
       token: response.accessToken,
-      expiresAt: Date.now() + response.expiresIn * 1000,
-      user: response.user,
+      expiresAt: tokenExpiry(response.accessToken),
+      user: toAuthUser(response.user),
     };
     this.session.set(session);
     try {
@@ -88,4 +90,21 @@ function readStoredSession(): AuthSession | null {
   } catch {
     return null;
   }
+}
+
+function toAuthUser(user: LoginResponse['user']): AuthUser {
+  return { id: user.id, email: user.email, name: user.profile?.name?.trim() || user.email.split('@')[0] };
+}
+
+/** Vencimiento del access token (claim `exp` del JWT); si no se puede leer, asume 15 minutos. */
+function tokenExpiry(token: string): number {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { exp?: number };
+    if (payload.exp) {
+      return payload.exp * 1000;
+    }
+  } catch {
+    // Token no decodificable: se usa el valor por defecto.
+  }
+  return Date.now() + 15 * 60 * 1000;
 }
