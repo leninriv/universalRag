@@ -27,7 +27,7 @@ import { ChatService, groupChatsByDate } from '../../services/chat.service';
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatHistoryComponent {
-  private readonly chatService = inject(ChatService);
+  protected readonly chatService = inject(ChatService);
 
   protected readonly search = signal('');
 

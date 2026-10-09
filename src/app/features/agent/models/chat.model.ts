@@ -9,10 +9,14 @@ export interface ChatMessage {
 
 export interface Chat {
   id: string;
+  /** Id del chat en el backend; existe tras la primera respuesta de `ask`. */
+  remoteId?: string;
   title: string;
   createdAt: Date;
   updatedAt: Date;
   messages: ChatMessage[];
+  /** `false` en chats del historial cuyos mensajes aún no se han traído del servidor. */
+  messagesLoaded?: boolean;
 }
 
 export interface ChatGroup {

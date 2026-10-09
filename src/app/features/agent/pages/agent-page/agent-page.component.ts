@@ -42,6 +42,7 @@ export class AgentPageComponent {
   });
 
   constructor() {
+    this.chatService.ensureChatsLoaded().subscribe();
     this.navigationEnd$.pipe(takeUntilDestroyed()).subscribe(() => this.historyVisible.set(false));
   }
 }

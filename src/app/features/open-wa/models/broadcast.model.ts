@@ -26,8 +26,8 @@ export interface OutgoingMessage {
   text: string;
 }
 
-/** Respuesta de `POST /whatsapp/messages` (202). */
+/** Resultado del envío: cuántos mensajes se enviaron y cuántos fallaron. */
 export interface SendResult {
-  jobId: string;
-  queued: number;
+  sent: number;
+  failed: number;
 }

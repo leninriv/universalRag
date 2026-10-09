@@ -30,6 +30,19 @@
         }
       }
     </mat-nav-list>
+    @if (chatService.hasMoreChats()) {
+      <button matButton type="button" class="w-full" [disabled]="chatService.loadingChats()" (click)="chatService.loadMoreChats()">
+        Ver más
+      </button>
+    }
+  } @else if (chatService.loadingChats()) {
+    <div class="flex flex-column gap-3 p-3">
+      <div class="app-skeleton" style="width: 70%"></div>
+      <div class="app-skeleton" style="width: 90%"></div>
+      <div class="app-skeleton" style="width: 55%"></div>
+    </div>
+  } @else if (chatService.loadError(); as loadError) {
+    <div class="app-callout app-callout-error m-2" role="alert">{{ loadError }}</div>
   } @else {
     <p class="m-0 mt-4 text-sm text-center text-color-secondary">
       {{ search() ? 'No se encontraron chats' : 'Aún no tienes chats' }}

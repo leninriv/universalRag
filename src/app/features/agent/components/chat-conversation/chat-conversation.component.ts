@@ -46,7 +46,18 @@ export class ChatConversationComponent {
     return !!chatId && this.chatService.isAwaitingReply(chatId);
   });
 
+  protected readonly loadingMessages = computed(() => {
+    const chatId = this.chatId();
+    return !!chatId && this.chatService.isLoadingMessages(chatId);
+  });
+
   constructor() {
+    effect(() => {
+      const chatId = this.chatId();
+      if (chatId) {
+        this.chatService.loadMessages(chatId);
+      }
+    });
     // Mantiene visible el último mensaje cuando cambia la conversación.
     effect(() => {
       this.messages();

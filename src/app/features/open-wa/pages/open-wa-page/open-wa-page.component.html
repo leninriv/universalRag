@@ -10,12 +10,13 @@
       <mat-card-content class="flex flex-column align-items-center text-center gap-3 py-5">
         <app-avatar icon="check" size="xlarge" />
         <h2 class="m-0 text-2xl font-semibold">
-          {{ sent.queued === 1 ? '1 mensaje en cola' : sent.queued.toLocaleString('es') + ' mensajes en cola' }}
+          {{ sent.sent === 1 ? '1 mensaje enviado' : sent.sent.toLocaleString('es') + ' mensajes enviados' }}
         </h2>
-        <p class="m-0 text-color-secondary line-height-3 max-w-30rem">
-          El envío por WhatsApp está en proceso. Los mensajes se enviarán en los próximos minutos.
-        </p>
-        <p class="m-0 text-xs text-color-secondary">Referencia: {{ sent.jobId }}</p>
+        @if (sent.failed > 0) {
+          <p class="m-0 text-color-secondary line-height-3 max-w-30rem">
+            {{ sent.failed === 1 ? '1 mensaje no se pudo enviar.' : sent.failed.toLocaleString('es') + ' mensajes no se pudieron enviar.' }}
+          </p>
+        }
         <button matButton="filled" type="button" (click)="restart()">
           <mat-icon>add</mat-icon>
           Nuevo envío
@@ -144,6 +145,15 @@
                 <div class="app-callout app-callout-error" role="alert">
                   <mat-icon>error</mat-icon>
                   <span>{{ error }}</span>
+                </div>
+              }
+
+              @if (sending()) {
+                <div class="flex flex-column gap-2" role="status">
+                  <span class="text-sm text-color-secondary">
+                    Enviando {{ progress() }} de {{ selectedRecipients().length }}… No cierres esta página.
+                  </span>
+                  <mat-progress-bar mode="determinate" [value]="(progress() / selectedRecipients().length) * 100" />
                 </div>
               }
 

@@ -3,7 +3,15 @@
     @for (message of messages(); track message.id) {
       <app-chat-message [message]="message" />
     } @empty {
-      <app-chat-empty-state class="flex-1" (promptSelected)="send($event)" />
+      @if (loadingMessages()) {
+        <div class="flex flex-column gap-3 pt-3">
+          <div class="app-skeleton" style="width: 60%"></div>
+          <div class="app-skeleton" style="width: 85%"></div>
+          <div class="app-skeleton" style="width: 40%"></div>
+        </div>
+      } @else {
+        <app-chat-empty-state class="flex-1" (promptSelected)="send($event)" />
+      }
     }
 
     @if (awaitingReply()) {

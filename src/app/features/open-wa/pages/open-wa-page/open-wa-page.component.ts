@@ -1,5 +1,4 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -7,11 +6,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
 import { MatStepperModule } from '@angular/material/stepper';
-import { filter, finalize, map, switchMap, tap } from 'rxjs';
+import { filter, firstValueFrom, map } from 'rxjs';
 import { WorkBook } from 'xlsx';
 
 import { TopbarContentDirective } from '../../../../layout/topbar/topbar-content.directive';
@@ -23,7 +23,7 @@ import {
 import { FileDropZoneComponent } from '../../../../shared/components/file-drop-zone/file-drop-zone.component';
 import { MessageEditorComponent } from '../../components/message-editor/message-editor.component';
 import { RecipientTableComponent } from '../../components/recipient-table/recipient-table.component';
-import { SendResult, SheetData } from '../../models/broadcast.model';
+import { OutgoingMessage, SendResult, SheetData } from '../../models/broadcast.model';
 import { WhatsappService } from '../../services/whatsapp.service';
 import { MAX_MESSAGE_LENGTH } from '../../utils/limits';
 import { buildMessages, buildRecipients, renderMessage, unknownVariables } from '../../utils/recipients';
@@ -42,6 +42,9 @@ const EXAMPLES_PER_COLUMN = 3;
  * Wizard de envío masivo por WhatsApp: 1) cargar un Excel/CSV (se lee en el navegador), 2) elegir la columna de
  * teléfonos, 3) elegir destinatarios, 4) escribir el mensaje (con variables) y enviarlo al backend.
  */
+/** Espera entre un mensaje y el siguiente. */
+const SEND_INTERVAL_MS = 1000;
+
 @Component({
   selector: 'app-open-wa-page',
   imports: [
@@ -49,6 +52,7 @@ const EXAMPLES_PER_COLUMN = 3;
     MatButtonModule,
     MatCardModule,
     MatIconModule,
+    MatProgressBarModule,
     MatProgressSpinnerModule,
     MatRadioModule,
     MatSelectModule,
@@ -155,6 +159,8 @@ export class OpenWaPageComponent {
   // Envío
   protected readonly sending = signal(false);
   protected readonly sendError = signal<string | null>(null);
+  /** Mensajes ya procesados durante el envío (para el indicador de progreso). */
+  protected readonly progress = signal(0);
   protected readonly result = signal<SendResult | null>(null);
 
   protected async onFiles(files: File[]): Promise<void> {
@@ -186,20 +192,38 @@ export class OpenWaPageComponent {
         },
       })
       .afterClosed()
-      .pipe(
-        filter(Boolean),
-        tap(() => {
-          this.sending.set(true);
-          this.sendError.set(null);
-        }),
-        switchMap(() =>
-          this.whatsapp.send(buildMessages(this.message(), recipients)).pipe(finalize(() => this.sending.set(false))),
-        ),
-      )
-      .subscribe({
-        next: (result) => this.result.set(result),
-        error: (error: unknown) => this.sendError.set(errorText(error, 'No se pudieron enviar los mensajes. Intenta de nuevo.')),
-      });
+      .pipe(filter(Boolean))
+      .subscribe(() => void this.sendAll(buildMessages(this.message(), recipients)));
+  }
+
+  /**
+   * TODO: mover el envío a una cola en el backend. Por ahora el front llama a `send-whatsapp` con un
+   * mensaje a la vez y espera 1 segundo entre uno y otro.
+   */
+  private async sendAll(messages: OutgoingMessage[]): Promise<void> {
+    this.sending.set(true);
+    this.sendError.set(null);
+    this.progress.set(0);
+    let sent = 0;
+    let failed = 0;
+    for (const [index, message] of messages.entries()) {
+      if (index > 0) {
+        await new Promise((resolve) => setTimeout(resolve, SEND_INTERVAL_MS));
+      }
+      try {
+        await firstValueFrom(this.whatsapp.sendText(message.phone, message.text));
+        sent++;
+      } catch {
+        failed++;
+      }
+      this.progress.set(index + 1);
+    }
+    this.sending.set(false);
+    if (sent === 0) {
+      this.sendError.set('No se pudo enviar ningún mensaje. Intenta de nuevo.');
+    } else {
+      this.result.set({ sent, failed });
+    }
   }
 
   /** Vuelve al paso 1 con el wizard vacío. */
@@ -213,10 +237,9 @@ export class OpenWaPageComponent {
   }
 }
 
-function errorText(error: unknown, fallback = 'No se pudo leer el archivo.'): string {
+function errorText(error: unknown): string {
   if (error instanceof SpreadsheetError) {
     return error.message;
   }
-  const message = error instanceof HttpErrorResponse ? (error.error as { message?: unknown } | null)?.message : null;
-  return typeof message === 'string' ? message : fallback;
+  return 'No se pudo leer el archivo.';
 }
